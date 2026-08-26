@@ -95,3 +95,7 @@ This project is not affiliated with, endorsed by, sponsored by, or associated wi
 **Work in progress.**
 
 The project is currently focused on building the island, park infrastructure, Tour Road, major locations, and the foundation for future gameplay.
+
+Support the Project
+
+A huge thank you to anyone who chooses to support the project. Any donations help cover development costs, tools, hosting, and original or properly licensed assets. Every contribution, no matter the size, is genuinely appreciated and helps keep the project moving forward.
