@@ -1,0 +1,56 @@
+Jurassic Dream Unreal Landscape Handoff
+=======================================
+
+Input
+-----
+Reference/JurassicDreamTerrain/JurassicDream_4096x4096_Master.r16
+4096 x 4096, unsigned 16-bit little-endian, headerless
+
+Output
+------
+Reference/JurassicDreamTerrain/JurassicDream_4081x4081_UE.r16
+Resolution: 4081 x 4081
+Samples: 16,654,561
+Expected bytes: 33,309,122
+Actual bytes: 33,309,122
+Format: unsigned 16-bit little-endian, headerless
+Orientation: source row-major x,y preserved
+Y flip: off
+Normalization: none
+Sculpting/coastline masking: none
+Resamples: one
+Filter: separable Lanczos-3, endpoint-preserving coordinate mapping
+
+Output statistics
+-----------------
+Minimum sample: 0
+Maximum sample: 61196
+SHA256: f8848221e032d3d5e5ac8c0859f304add991c3cbd79785745becb230ced22eb4
+
+The source contained five isolated 65535 samples. Lanczos-3 interpolation was
+used without normalization; those isolated peaks are naturally smoothed by the
+one-time resample rather than artificially restored or stretched.
+
+Preview
+-------
+Reference/JurassicDreamTerrain/JurassicDream_4081x4081_UE_Preview.png
+8-bit visual preview only, derived from the resampled sample high bytes.
+PNG dimensions: 4081 x 4081
+PNG bit depth: 8
+PNG color type: grayscale
+Size: 919,526 bytes
+
+Unreal test map
+---------------
+/Game/Maps/JP_JurassicDream_Terrain_Test
+Created as a new empty map only.
+Landscape import: not performed.
+Landscape settings reserved: 255 quads/component, 1 section/component,
+16 x 16 components.
+Scale reserved: X=100.3921569, Y=100.3921569, Z=200.0030518.
+Landscape actor Z reserved: 51200.7813 cm.
+
+Protected content
+-----------------
+JP_Island_Blockout, the old Landscape, B16, B17, B18, and
+JP_MovieMap_Landscape_Test were not modified.

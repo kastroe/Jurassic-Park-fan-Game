@@ -1,0 +1,50 @@
+[
+  {
+    "chapter": 1,
+    "id": "arrival",
+    "title": "Arrival",
+    "objective": "Ride from the waterfall landing area through the dinosaur valley to the Visitor Center."
+  },
+  {
+    "chapter": 1,
+    "id": "orientation",
+    "title": "Orientation",
+    "objective": "Explore the Visitor Center and reach the tour staging area."
+  },
+  {
+    "chapter": 2,
+    "id": "tour",
+    "title": "The Tour",
+    "objective": "Follow the automated tour route through the paddocks."
+  },
+  {
+    "chapter": 3,
+    "id": "storm",
+    "title": "The Storm",
+    "objective": "Survive the stranded-car sequence beside the predator paddock."
+  },
+  {
+    "chapter": 3,
+    "id": "escape",
+    "title": "After the Breakout",
+    "objective": "Regroup and find a safe route back toward the park interior."
+  },
+  {
+    "chapter": 4,
+    "id": "power",
+    "title": "Restore Power",
+    "objective": "Reach the maintenance compound and restore critical systems."
+  },
+  {
+    "chapter": 4,
+    "id": "raptors",
+    "title": "Raptors Loose",
+    "objective": "Avoid hunting animals while returning to the Visitor Center."
+  },
+  {
+    "chapter": 5,
+    "id": "finale",
+    "title": "Visitor Center",
+    "objective": "Reach the rotunda, survive the final encounter, and evacuate."
+  }
+]

@@ -1,0 +1,10 @@
+Create the binary Unreal map here in the Editor:
+
+1. File -> New Level -> Open World.
+2. Save Current Level As:
+   /Game/Maps/JP_Island_Blockout
+3. Project Settings -> Maps & Modes:
+   Editor Startup Map = JP_Island_Blockout
+   Game Default Map = JP_Island_Blockout
+
+The .umap itself cannot be generated correctly as plain text outside Unreal Editor.

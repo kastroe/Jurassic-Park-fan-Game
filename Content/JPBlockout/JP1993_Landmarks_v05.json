@@ -1,0 +1,82 @@
+[
+  {
+    "name": "Waterfall_Helipad",
+    "normalized_x": -0.66,
+    "normalized_y": -0.63,
+    "target_world_z_cm": 3800,
+    "world_x_cm": -66528.0,
+    "world_y_cm": -63504.0
+  },
+  {
+    "name": "Brachiosaurus_Valley",
+    "normalized_x": -0.4,
+    "normalized_y": -0.22,
+    "target_world_z_cm": 2200,
+    "world_x_cm": -40320.0,
+    "world_y_cm": -22176.0
+  },
+  {
+    "name": "Visitor_Center",
+    "normalized_x": -0.1,
+    "normalized_y": -0.03,
+    "target_world_z_cm": 3200,
+    "world_x_cm": -10080.0,
+    "world_y_cm": -3024.0
+  },
+  {
+    "name": "Raptor_Pen",
+    "normalized_x": -0.18,
+    "normalized_y": -0.12,
+    "target_world_z_cm": 3150,
+    "world_x_cm": -18144.0,
+    "world_y_cm": -12096.0
+  },
+  {
+    "name": "Tour_Gates",
+    "normalized_x": 0.02,
+    "normalized_y": 0.02,
+    "target_world_z_cm": 3000,
+    "world_x_cm": 2016.0,
+    "world_y_cm": 2016.0
+  },
+  {
+    "name": "Dilophosaurus_Paddock",
+    "normalized_x": 0.22,
+    "normalized_y": -0.1,
+    "target_world_z_cm": 2750,
+    "world_x_cm": 22176.0,
+    "world_y_cm": -10080.0
+  },
+  {
+    "name": "Triceratops_Field",
+    "normalized_x": 0.33,
+    "normalized_y": 0.03,
+    "target_world_z_cm": 2400,
+    "world_x_cm": 33264.0,
+    "world_y_cm": 3024.0
+  },
+  {
+    "name": "TRex_Paddock",
+    "normalized_x": 0.45,
+    "normalized_y": 0.06,
+    "target_world_z_cm": 2250,
+    "world_x_cm": 45360.0,
+    "world_y_cm": 6048.0
+  },
+  {
+    "name": "Maintenance_Compound",
+    "normalized_x": 0.12,
+    "normalized_y": 0.34,
+    "target_world_z_cm": 3400,
+    "world_x_cm": 12096.0,
+    "world_y_cm": 34272.0
+  },
+  {
+    "name": "Gallimimus_Plain",
+    "normalized_x": -0.18,
+    "normalized_y": 0.43,
+    "target_world_z_cm": 2500,
+    "world_x_cm": -18144.0,
+    "world_y_cm": 43344.0
+  }
+]

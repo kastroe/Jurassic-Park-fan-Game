@@ -1,0 +1,51 @@
+JP Movie Map Landscape Test Import
+===================================
+
+Source files
+------------
+JP_MovieMap_Height_Approx_16bit.png  720 x 940, grayscale 16-bit
+JP_MovieMap_IslandMask.png           720 x 940, grayscale 8-bit
+JP_MovieMap_Texture.png              720 x 940, RGB 8-bit
+
+Prepared heightmap
+------------------
+JP_MovieMap_Height_694x946_16bit.png
+
+The prepared heightmap uses bilinear interpolation in the original 16-bit
+height domain. Pixels outside the island mask are set to raw height 48, the
+lowest masked island value. The output remains grayscale 16-bit PNG.
+
+Landscape geometry
+------------------
+Overall resolution: 694 x 946 vertices
+Total quads:        693 x 945
+Section size:       63 x 63 quads
+Sections/component: 1 x 1
+Components:         11 x 15
+
+Landscape scale
+---------------
+Target north-south size: 200000.000 cm (approximately 2000 m)
+Source east-west ratio: 720 / 940
+Target east-west size:  153191.489 cm (approximately 1531.915 m)
+X scale:               221.055540 cm
+Y scale:               211.640212 cm
+Masked raw height span: 63501 - 48 = 63453
+Target vertical relief: 18000.000 cm (approximately 180 m)
+Z scale:               36.310340 cm
+
+Heightmap direction
+-------------------
+The source README identifies north as local +Y in the reference OBJ. Keep the
+prepared PNG row order unchanged for the first test import. Use Flip Y Axis
+unchecked initially; if the visual overlay proves north/south reversed, repeat
+the test import with Flip Y Axis enabled rather than changing production data.
+
+Reference transform
+-------------------
+Location: (-19000, -20000, 21635)
+Rotation: (0, 90, 180) Unreal-normalized equivalent
+Scale:    (-1.05, 1.05, 1.05)
+
+Do not import this into JP_Island_Blockout. Create a separate test map and use
+the reference mesh only for visual alignment verification.

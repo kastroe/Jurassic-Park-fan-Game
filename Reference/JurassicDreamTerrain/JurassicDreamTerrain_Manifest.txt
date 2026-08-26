@@ -1,0 +1,59 @@
+Jurassic Dream CryEngine Terrain Handoff
+========================================
+
+Source
+------
+C:\Users\KASTROE\Downloads\Jurassic Dream\CRYENGINE\GameSDK\Levels\Jurassic_Dream\LevelData\Heightmap.dat
+
+Extraction
+----------
+HeightmapData sample offset: 8545 (decimal, source file)
+Width: 4096
+Height: 4096
+Sample count: 16,777,216
+Sample type: unsigned 16-bit integer
+Byte order: little-endian
+Raw sample bytes: 33,554,432
+Source rows: row-major, sample[x + y * 4096]
+Canonical orientation: source orientation preserved; no row or column reversal
+
+CryEngine metadata
+------------------
+UnitSize: 1 metre
+MaxHeight: 1024 metres
+WaterLevel: 50 metres
+
+Height conversion
+-----------------
+height_metres = sample_value / 65535.0 * 1024.0
+
+Outputs
+-------
+JurassicDream_4096x4096_Master.r16
+  Headerless raw unsigned 16-bit little-endian samples.
+  Size: 33,554,432 bytes
+  SHA256: 183fd8bde4de1cc7b03739f56611d26125789c2c4c860e1ce15acd96f4fafb86
+
+JurassicDream_4096x4096_16bit.png
+  4096x4096 grayscale PNG, 16-bit samples, no value normalization.
+  Size: 14,222,095 bytes
+  SHA256: 88a189ad203776f3220ae2c7ebb34c08a6f8d1f1b29a924325e2014ddfd60308
+
+JurassicDream_4096x4096_Preview.png
+  4096x4096 8-bit visual preview only.
+  Each pixel uses the source sample high byte; no min/max normalization.
+  Size: 1,114,493 bytes
+  SHA256: 0aee24673646bfdfd324f9ff8fb6c35604b30832b0f0f973e184e8d2152bd201
+
+Validation
+----------
+Minimum sample: 0
+Maximum sample: 65535
+The R16 SHA256 matches the SHA256 of Heightmap.dat bytes 8545 through 33802976 inclusive.
+The full-resolution preview preserves the same island silhouette and major elevation structure as the approved low-resolution preview.
+No flipped-Y export was created; the canonical source orientation remains unchanged.
+
+Unreal import status
+--------------------
+No Unreal import was performed.
+No Unreal maps, Landscapes, CryEngine files, or production content were modified.

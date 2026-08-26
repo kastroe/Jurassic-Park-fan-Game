@@ -1,0 +1,57 @@
+﻿# Unreal Engine generated files
+Binaries/
+DerivedDataCache/
+Intermediate/
+Saved/
+
+# Visual Studio / IDE
+.vs/
+.vscode/
+.idea/
+*.VC.db
+*.VC.opendb
+*.suo
+*.user
+*.userprefs
+*.sln
+*.xcodeproj
+
+# Build/generated project files
+*.opensdf
+*.sdf
+*.sln
+*.suo
+
+# Unreal autosaves/backups
+Saved/Autosaves/
+Saved/Backup/
+Saved/Crashes/
+Saved/Logs/
+Saved/StagedBuilds/
+
+# OS junk
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# OpenCode temporary/cache material
+.opencode/cache/
+.opencode/tmp/
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.log
+.opencode/tasks/
+.opencode/cache/
+.opencode/tmp/
+.opencode/logs/
+.opencode/sessions/
+.opencode/tests/
+Content/JPGenerated/RT_JP_LandscapeBackup.uasset

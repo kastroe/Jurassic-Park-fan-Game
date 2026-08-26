@@ -1,0 +1,93 @@
+{
+  "project": "1993 Film Route Blockout",
+  "orientation": "North-west waterfall/helipad arrival is the geographic anchor.",
+  "scale_note": "Coordinates are blockout-relative metres, not a claim about canonical island survey coordinates.",
+  "locations": [
+    {
+      "id": "helipad_waterfall",
+      "name": "Waterfall / Helipad Arrival",
+      "x": -4200,
+      "y": 3400,
+      "chapter": 1
+    },
+    {
+      "id": "brachiosaurus_valley",
+      "name": "Brachiosaurus Valley",
+      "x": -3100,
+      "y": 2300,
+      "chapter": 1
+    },
+    {
+      "id": "visitor_center",
+      "name": "Visitor Center",
+      "x": -900,
+      "y": 850,
+      "chapter": 1
+    },
+    {
+      "id": "raptor_pen",
+      "name": "Raptor Holding Pen",
+      "x": -1350,
+      "y": 1150,
+      "chapter": 1
+    },
+    {
+      "id": "tour_gates",
+      "name": "Park Tour Gates",
+      "x": -300,
+      "y": 650,
+      "chapter": 2
+    },
+    {
+      "id": "dilophosaurus",
+      "name": "Dilophosaurus Paddock",
+      "x": 850,
+      "y": 1450,
+      "chapter": 2
+    },
+    {
+      "id": "triceratops",
+      "name": "Triceratops Field",
+      "x": 1700,
+      "y": 650,
+      "chapter": 2
+    },
+    {
+      "id": "trex_paddock",
+      "name": "T. rex Paddock",
+      "x": 2400,
+      "y": -500,
+      "chapter": 3
+    },
+    {
+      "id": "maintenance",
+      "name": "Maintenance / Power Compound",
+      "x": 500,
+      "y": -1800,
+      "chapter": 4
+    },
+    {
+      "id": "gallimimus_plain",
+      "name": "Gallimimus Plain",
+      "x": -1000,
+      "y": -2500,
+      "chapter": 4
+    },
+    {
+      "id": "visitor_center_finale",
+      "name": "Visitor Center Finale",
+      "x": -900,
+      "y": 850,
+      "chapter": 5
+    }
+  ],
+  "main_route": [
+    "helipad_waterfall",
+    "brachiosaurus_valley",
+    "visitor_center",
+    "tour_gates",
+    "dilophosaurus",
+    "triceratops",
+    "trex_paddock"
+  ]
+}

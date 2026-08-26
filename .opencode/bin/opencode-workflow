@@ -1,0 +1,443 @@
+#!/usr/bin/env python3
+"""Small, dependency-free controller for Workflow Protocol v2."""
+from __future__ import annotations
+
+import argparse
+import datetime as dt
+import hashlib
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+from typing import Any
+
+TASK_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{2,63}$")
+STATES = {"PLANNING", "READY", "IMPLEMENTING", "VERIFYING", "BLOCKED", "RECOVERY_REQUIRED", "COMPLETED", "ABORTED", "ARCHIVED"}
+GATES = ("plan", "implementation", "tests", "review", "security", "deployment", "commit")
+GATE_STATES = {"PENDING", "RUNNING", "PASS", "FAIL", "BLOCKED", "NOT_APPLICABLE"}
+# Machine-detectable status on the first non-empty line (SPEC section 3).
+# Ambiguous artifacts must not implicitly pass; must match a PASS-class token.
+STATUS_RE = re.compile(
+    r"(?i)^\s*(?:STATUS|STATE|VERDICT)\s*[:=]\s*(PASS|OK|SUCCESS|APPROVED|VERIFIED)|\[PASS\]"
+)
+# Evidence change on a gate invalidates its dependent gates (SPEC 212).
+DEPENDENT = {"implementation": ["tests", "review", "security", "deployment", "commit"],
+             "tests": ["commit"], "review": ["commit"], "security": ["commit"], "deployment": ["commit"]}
+EXIT = {"usage": 2, "missing": 3, "transition": 4, "lock": 5, "evidence": 6, "commit": 7, "archive": 8, "recovery": 9, "owner": 10}
+RETRY_CAP = 3
+SECRET = re.compile(r"(?i)(api[_-]?key|token|password|secret|authorization|bearer)")
+
+
+class WorkflowError(Exception):
+    def __init__(self, message: str, code: int = 2):
+        super().__init__(message)
+        self.code = code
+
+
+def now() -> str:
+    return dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def digest(path: Path) -> str:
+    h = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(65536), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def redact(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {k: "[REDACTED]" if SECRET.search(str(k)) else redact(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [redact(v) for v in value]
+    if isinstance(value, str):
+        return re.sub(r"(?i)(bearer\s+|token=|password=|secret=)[^\s,;]+", r"\1[REDACTED]", value)
+    return value
+
+
+def atomic_write(path: Path, text: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, temporary = tempfile.mkstemp(prefix=f".{path.name}.", dir=str(path.parent), text=True)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as stream:
+            stream.write(text)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temporary, path)
+    finally:
+        if os.path.exists(temporary):
+            os.unlink(temporary)
+
+
+def load_manifest(path: Path) -> dict[str, Any]:
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise WorkflowError(f"invalid manifest: {path}", EXIT["recovery"]) from exc
+    if not isinstance(data, dict) or data.get("protocol") != "workflow-v2":
+        raise WorkflowError("manifest is not workflow-v2", EXIT["usage"])
+    return data
+
+
+def save_manifest(path: Path, manifest: dict[str, Any]) -> None:
+    manifest["updated_at"] = now()
+    atomic_write(path, json.dumps(redact(manifest), indent=2, sort_keys=True) + "\n")
+
+
+def task_dir(args: argparse.Namespace, task_id: str) -> Path:
+    if not TASK_RE.fullmatch(task_id):
+        raise WorkflowError("invalid task id", EXIT["usage"])
+    root = Path(args.workspace).expanduser().resolve()
+    path = root / ".opencode" / "tasks" / task_id
+    if not path.is_dir():
+        raise WorkflowError(f"task not found: {task_id}", EXIT["missing"])
+    return path
+
+
+def safe_relative(task: Path, value: str) -> Path:
+    candidate = Path(value)
+    if candidate.is_absolute() or ".." in candidate.parts:
+        raise WorkflowError("path must be relative and confined to task", EXIT["evidence"])
+    resolved = (task / candidate).resolve()
+    if task.resolve() not in resolved.parents and resolved != task.resolve():
+        raise WorkflowError("path escapes task directory", EXIT["evidence"])
+    return resolved
+
+
+def events(task: Path) -> list[dict[str, Any]]:
+    path = task / "events.ndjson"
+    result = []
+    if not path.exists():
+        raise WorkflowError("events.ndjson is missing", EXIT["recovery"])
+    for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+        try:
+            item = json.loads(line)
+            if not isinstance(item, dict) or item.get("task_id") is None or item.get("event_id") != number:
+                raise ValueError
+        except (json.JSONDecodeError, ValueError):
+            raise WorkflowError(f"malformed event at line {number}", EXIT["recovery"])
+        result.append(item)
+    return result
+
+
+def append_event(task: Path, task_id: str, actor: str, event_type: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    prior = events(task)
+    event = {"event_id": len(prior) + 1, "task_id": task_id, "timestamp": now(), "actor": actor, "type": event_type, "payload": redact(payload or {})}
+    path = task / "events.ndjson"
+    with path.open("a", encoding="utf-8") as stream:
+        stream.write(json.dumps(event, sort_keys=True) + "\n")
+        stream.flush()
+        os.fsync(stream.fileno())
+    return event
+
+
+def check_invalidation(task: Path, manifest: dict[str, Any], actor: str) -> None:
+    """Recompute evidence digests; on change, reset dependent gates and record an invalidation event."""
+    task_id = manifest["task_id"]
+    invalidated: list[str] = []
+    src_gate: str | None = None
+    gates = manifest.get("gates", {})
+    for name, gate in list(gates.items()):
+        stored = gate.get("evidence_digest")
+        evidence = gate.get("evidence", [])
+        if not stored or not evidence:
+            continue
+        try:
+            current = digest(safe_relative(task, evidence[0]))
+        except WorkflowError:
+            continue
+        if current == stored:
+            continue
+        gate["evidence_digest"] = current
+        src_gate = name
+        for dep in DEPENDENT.get(name, ()):
+            dependent = gates.get(dep)
+            if dependent is None or dependent.get("status") in {"PENDING", "NOT_APPLICABLE"}:
+                continue
+            dependent["status"] = "PENDING"
+            dependent["evidence"] = []
+            dependent.pop("evidence_digest", None)
+            dependent["invalidated_by"] = name
+            invalidated.append(dep)
+    if invalidated:
+        append_event(task, task_id, actor, "invalidated", {"artifact": src_gate, "gates": invalidated})
+        save_manifest(task / "manifest.yaml", manifest)
+
+
+def output(args: argparse.Namespace, value: Any) -> None:
+    text = json.dumps(redact(value), indent=2, sort_keys=True) if args.json else str(value)
+    print(text)
+
+
+def create(args: argparse.Namespace) -> dict[str, Any]:
+    if not TASK_RE.fullmatch(args.id):
+        raise WorkflowError("invalid task id", EXIT["usage"])
+    root = Path(args.workspace).expanduser().resolve()
+    task = root / ".opencode" / "tasks" / args.id
+    if task.exists():
+        raise WorkflowError("task already exists", EXIT["usage"])
+    (task / "artifacts").mkdir(parents=True)
+    timestamp = now()
+    manifest = {"protocol": "workflow-v2", "task_id": args.id, "created_at": timestamp, "updated_at": timestamp,
+                "request": {"summary": args.summary, "context": args.context or "", "requested_by": args.actor, "workspace_root": str(root)},
+                "lifecycle": {"state": "PLANNING", "state_version": 1, "last_transition_id": 1, "retry_count": 0}, "agents": [], "artifacts": [],
+                "gates": {name: {"status": "PENDING", "evidence": []} for name in GATES},
+                "scope": {"allowed_roots": [str(root)], "declared_paths": [], "unexpected_change_policy": "BLOCK"},
+                "commit_proof": {"status": "PENDING", "repository_root": None, "branch": None, "head_sha": None, "changed_paths": [], "commands_evidence": []},
+                "archive": {"status": "ACTIVE", "location": None}}
+    atomic_write(task / "manifest.yaml", json.dumps(manifest, indent=2, sort_keys=True) + "\n")
+    atomic_write(task / "events.ndjson", "")
+    append_event(task, args.id, args.actor, "task_created", {"state": "PLANNING"})
+    manifest["lifecycle"]["last_transition_id"] = 1
+    save_manifest(task / "manifest.yaml", manifest)
+    return {"task_id": args.id, "state": "PLANNING", "path": str(task)}
+
+
+def show(args: argparse.Namespace, verify: bool = False) -> dict[str, Any]:
+    task = task_dir(args, args.id)
+    manifest = load_manifest(task / "manifest.yaml")
+    log = events(task)
+    if manifest["task_id"] != args.id:
+        raise WorkflowError("manifest task id mismatch", EXIT["recovery"])
+    result = {"manifest": manifest, "last_event": log[-1] if log else None, "task_path": str(task)}
+    if verify:
+        result["validation"] = validate(task, manifest)
+    return result
+
+
+def validate(task: Path, manifest: dict[str, Any]) -> dict[str, Any]:
+    errors = []
+    for required in ("protocol", "task_id", "request", "lifecycle", "gates", "scope", "commit_proof", "archive"):
+        if required not in manifest:
+            errors.append(f"missing manifest field: {required}")
+    if not (task / "artifacts").is_dir():
+        errors.append("missing artifacts directory")
+    for name, gate in manifest.get("gates", {}).items():
+        if gate.get("status") not in GATE_STATES:
+            errors.append(f"invalid gate status: {name}")
+        for ref in gate.get("evidence", []):
+            try:
+                safe_relative(task, ref)
+            except WorkflowError:
+                errors.append(f"invalid evidence path: {ref}")
+    return {"valid": not errors, "errors": errors}
+
+
+def transition(args: argparse.Namespace) -> dict[str, Any]:
+    task = task_dir(args, args.id)
+    manifest = load_manifest(task / "manifest.yaml")
+    check_invalidation(task, manifest, args.actor)
+    old = manifest["lifecycle"]["state"]
+    new = args.to
+    allowed = {"PLANNING": {"READY", "BLOCKED", "RECOVERY_REQUIRED", "ABORTED"}, "READY": {"IMPLEMENTING", "ABORTED", "RECOVERY_REQUIRED"},
+               "IMPLEMENTING": {"VERIFYING", "BLOCKED", "RECOVERY_REQUIRED", "ABORTED"}, "VERIFYING": {"COMPLETED", "IMPLEMENTING", "BLOCKED", "RECOVERY_REQUIRED", "ABORTED"},
+               "BLOCKED": {"PLANNING", "IMPLEMENTING", "RECOVERY_REQUIRED", "ABORTED"}, "RECOVERY_REQUIRED": {"PLANNING", "IMPLEMENTING", "BLOCKED", "ABORTED"},
+               "COMPLETED": {"ARCHIVED"}, "ABORTED": {"ARCHIVED"}, "ARCHIVED": set()}
+    if new not in allowed.get(old, set()):
+        raise WorkflowError(f"invalid transition {old} -> {new}", EXIT["transition"])
+    if new == "READY" and manifest["gates"].get("plan", {}).get("status") != "PASS":
+        raise WorkflowError("plan gate must PASS", EXIT["transition"])
+    if new == "VERIFYING" and manifest["gates"].get("implementation", {}).get("status") != "PASS":
+        raise WorkflowError("implementation gate must PASS", EXIT["transition"])
+    if new == "COMPLETED":
+        if manifest["commit_proof"].get("status") != "VERIFIED":
+            raise WorkflowError("verified commit proof required", EXIT["commit"])
+        if any(g.get("status") not in {"PASS", "NOT_APPLICABLE"} for g in manifest["gates"].values()):
+            raise WorkflowError("all gates must PASS or NOT_APPLICABLE", EXIT["transition"])
+    lifecycle = manifest["lifecycle"]
+    if old == "VERIFYING" and new == "IMPLEMENTING":
+        retry = lifecycle.get("retry_count", 0)
+        if retry >= RETRY_CAP:
+            raise WorkflowError(f"retry_count {retry} exceeds cap {RETRY_CAP}; move task to BLOCKED", EXIT["transition"])
+        lifecycle["retry_count"] = retry + 1
+    event = append_event(task, args.id, args.actor, "lifecycle_transition", {"from": old, "to": new, "reason": args.reason})
+    manifest["lifecycle"].update(state=new, state_version=manifest["lifecycle"].get("state_version", 1) + 1, last_transition_id=event["event_id"])
+    save_manifest(task / "manifest.yaml", manifest)
+    return {"from": old, "to": new, "event_id": event["event_id"]}
+
+
+def evidence_status(path: Path) -> str | None:
+    """Return the machine-detectable PASS-class token from the first non-empty line, or None."""
+    try:
+        for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+            if not line.strip():
+                continue
+            match = STATUS_RE.search(line)
+            if match:
+                return match.group(1) or "PASS"
+            return None
+    except OSError:
+        return None
+    return None
+
+
+def set_gate(args: argparse.Namespace) -> dict[str, Any]:
+    task = task_dir(args, args.id)
+    manifest = load_manifest(task / "manifest.yaml")
+    if args.gate not in GATES or args.status not in GATE_STATES:
+        raise WorkflowError("invalid gate or status", EXIT["transition"])
+    check_invalidation(task, manifest, args.actor)
+    evidence = []
+    if args.evidence:
+        path = safe_relative(task, args.evidence)
+        if not path.is_file():
+            raise WorkflowError("evidence file missing", EXIT["evidence"])
+        evidence = [args.evidence]
+    if args.status == "PASS" and not evidence and args.gate not in {"commit"}:
+        raise WorkflowError("passing a gate requires evidence", EXIT["evidence"])
+    if args.status == "PASS" and evidence and args.gate not in {"commit"}:
+        if evidence_status(safe_relative(task, evidence[0])) is None:
+            raise WorkflowError("evidence lacks a machine-detectable status; ambiguous artifact cannot pass", EXIT["evidence"])
+    if args.status == "NOT_APPLICABLE" and not (args.reason or "").strip():
+        raise WorkflowError("NOT_APPLICABLE requires a reason", EXIT["transition"])
+    record = {"status": args.status, "reason": args.reason or ""}
+    if evidence:
+        record["evidence"] = evidence
+        record["evidence_digest"] = digest(safe_relative(task, evidence[0]))
+    manifest["gates"][args.gate] = record
+    event = append_event(task, args.id, args.actor, "gate_changed", {"gate": args.gate, "status": args.status, "evidence": evidence, "reason": args.reason or ""})
+    save_manifest(task / "manifest.yaml", manifest)
+    return {"gate": args.gate, "status": args.status, "event_id": event["event_id"]}
+
+
+def commit_proof(args: argparse.Namespace) -> dict[str, Any]:
+    task = task_dir(args, args.id)
+    manifest = load_manifest(task / "manifest.yaml")
+    root = Path(manifest["request"]["workspace_root"])
+    proof = manifest["commit_proof"]
+    if not (root / ".git").exists():
+        proof.update(status="NO_REPOSITORY", repository_root=None, verified_at=now())
+        append_event(task, args.id, args.actor, "commit_proof_recorded", {"status": "NO_REPOSITORY"})
+        save_manifest(task / "manifest.yaml", manifest)
+        raise WorkflowError("workspace is not a git repository", EXIT["commit"])
+    def run(command: list[str]) -> tuple[str, int]:
+        completed = subprocess.run(command, cwd=root, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=False)
+        clean = redact(completed.stdout or "")
+        return hashlib.sha256(clean.encode()).hexdigest(), completed.returncode
+    commands = [("rev-parse", ["git", "rev-parse", "--show-toplevel"]), ("branch", ["git", "branch", "--show-current"]), ("head", ["git", "rev-parse", "HEAD"]), ("status", ["git", "status", "--porcelain"]), ("paths", ["git", "diff-tree", "--no-commit-id", "--name-only", "-r", "HEAD"])]
+    evidence = []
+    values = {}
+    for name, command in commands:
+        hashed, code = run(command)
+        evidence.append({"command": name, "exit_code": code, "output_sha256": hashed, "timestamp": now()})
+        if code != 0:
+            proof["status"] = "FAILED"
+            proof["commands_evidence"] = evidence
+            save_manifest(task / "manifest.yaml", manifest)
+            raise WorkflowError("git proof command failed", EXIT["commit"])
+        raw = subprocess.run(command, cwd=root, text=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, check=False).stdout.strip()
+        values[name] = raw
+    dirty = [line for line in values["status"].splitlines() if line.strip()]
+    if dirty:
+        proof.update(status="FAILED", repository_root=values["rev-parse"], branch=values["branch"] or "DETACHED",
+                     head_sha=values["head"], verified_at=now(), changed_paths=values["paths"].splitlines(),
+                     commands_evidence=evidence, failure_reason="uncommitted changes present in worktree")
+        append_event(task, args.id, args.actor, "commit_proof_recorded", {"status": "FAILED", "head_sha": values["head"], "dirty_lines": dirty})
+        save_manifest(task / "manifest.yaml", manifest)
+        raise WorkflowError("worktree is dirty; commit or stash task changes before proof", EXIT["commit"])
+    proof.update(status="VERIFIED", repository_root=values["rev-parse"], branch=values["branch"] or "DETACHED", head_sha=values["head"], verified_at=now(), changed_paths=values["paths"].splitlines(), commands_evidence=evidence)
+    manifest["gates"]["commit"] = {"status": "PASS", "evidence": []}
+    append_event(task, args.id, args.actor, "commit_proof_recorded", {"status": "VERIFIED", "head_sha": values["head"], "changed_paths": proof["changed_paths"]})
+    save_manifest(task / "manifest.yaml", manifest)
+    return {"status": "VERIFIED", "head_sha": values["head"], "changed_paths": proof["changed_paths"]}
+
+
+def inspect(args: argparse.Namespace) -> dict[str, Any]:
+    result = show(args, verify=True)
+    result["recovery_required"] = not result["validation"]["valid"]
+    return result
+
+
+def archive(args: argparse.Namespace) -> dict[str, Any]:
+    if args.actor != "orchestrator":
+        raise WorkflowError("only orchestrator may archive", EXIT["owner"])
+    task = task_dir(args, args.id)
+    manifest = load_manifest(task / "manifest.yaml")
+    if manifest["lifecycle"]["state"] not in {"COMPLETED", "ABORTED"}:
+        raise WorkflowError("task is not completion/abort eligible", EXIT["transition"])
+    destination = Path(os.environ.get("OPENCODE_ARCHIVE_DIR", str(Path.home() / ".opencode" / "archive"))) / args.id
+    if destination.exists():
+        raise WorkflowError("archive destination already exists", EXIT["archive"])
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    archive_event = append_event(task, args.id, args.actor, "archive_started", {"destination": str(destination)})
+    manifest["archive"].update(status="ARCHIVED", location=str(destination))
+    manifest["lifecycle"].update(state="ARCHIVED", state_version=manifest["lifecycle"].get("state_version", 1) + 1, last_transition_id=archive_event["event_id"])
+    save_manifest(task / "manifest.yaml", manifest)
+    try:
+        shutil.copytree(task, destination, symlinks=False)
+        source_files = sorted(p.relative_to(task).as_posix() for p in task.rglob("*") if p.is_file())
+        for relative in source_files:
+            if digest(task / relative) != digest(destination / relative):
+                raise WorkflowError("archive verification failed; source retained", EXIT["archive"])
+        receipt = {"source": str(task), "destination": str(destination), "actor": args.actor, "source_manifest_sha256": digest(task / "manifest.yaml"), "files": [{"path": p, "sha256": digest(destination / p)} for p in source_files], "timestamp": now(), "disposition": manifest["lifecycle"]["state"]}
+        atomic_write(destination / "archive-receipt.yaml", json.dumps(receipt, indent=2, sort_keys=True) + "\n")
+    except Exception:
+        manifest["archive"].update(status="ACTIVE", location=None)
+        manifest["lifecycle"].update(state="RECOVERY_REQUIRED")
+        save_manifest(task / "manifest.yaml", manifest)
+        raise
+    return {"status": "ARCHIVED", "location": str(destination)}
+
+
+def import_v1(args: argparse.Namespace) -> dict[str, Any]:
+    source = Path(args.workspace).expanduser().resolve()
+    candidates = [p for p in source.iterdir() if p.is_file() and (p.name.startswith(("SPEC-", "FINDINGS-", "FILES_MODIFIED-", "TEST_RESULTS-", "REVIEW_RESULTS-", "AUDIT_RESULTS-", "DEPLOY_LOG-", "DEBUG_LOG-", "RESEARCH-")) and p.name.endswith(f"-{args.slug}.md"))]
+    created = argparse.Namespace(workspace=str(source), id=args.id or args.slug, summary=f"Imported v1 task {args.slug}", context="Explicit v1 import", actor=args.actor)
+    result = create(created)
+    task = source / ".opencode" / "tasks" / created.id
+    for item in candidates:
+        target = task / "artifacts" / "legacy" / item.name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(item, target)
+    manifest = load_manifest(task / "manifest.yaml")
+    manifest["migration_source"] = {"slug": args.slug, "workspace": str(source), "files": [p.name for p in candidates]}
+    save_manifest(task / "manifest.yaml", manifest)
+    return {"task_id": created.id, "imported": [p.name for p in candidates], "originals_preserved": True}
+
+
+def parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(prog="opencode-workflow")
+    p.add_argument("--workspace", default=os.getcwd())
+    p.add_argument("--json", action="store_true")
+    sub = p.add_subparsers(dest="command", required=True)
+    task = sub.add_parser("task"); task_sub = task.add_subparsers(dest="task_command", required=True)
+    create_parser = task_sub.add_parser("create"); create_parser.add_argument("--id", required=True); create_parser.add_argument("--summary", required=True); create_parser.add_argument("--context"); create_parser.add_argument("--actor", default="orchestrator"); create_parser.set_defaults(func=create)
+    for name in ("show", "verify", "inspect", "commit-proof", "archive"):
+        command = task_sub.add_parser(name); command.add_argument("id"); command.add_argument("--actor", default="orchestrator"); command.set_defaults(func={"show": show, "verify": lambda a: show(a, True), "inspect": inspect, "commit-proof": commit_proof, "archive": archive}[name])
+    event = task_sub.add_parser("event"); event.add_argument("id"); event.add_argument("--type", required=True); event.add_argument("--actor", required=True); event.add_argument("--reason", default=""); event.set_defaults(func=lambda a: event_command(a))
+    trans = task_sub.add_parser("transition"); trans.add_argument("id"); trans.add_argument("--to", required=True); trans.add_argument("--reason", required=True); trans.add_argument("--actor", default="orchestrator"); trans.set_defaults(func=transition)
+    gate = task_sub.add_parser("gate"); gate_sub = gate.add_subparsers(dest="gate_command", required=True); setp = gate_sub.add_parser("set"); setp.add_argument("id"); setp.add_argument("--gate", required=True); setp.add_argument("--status", required=True); setp.add_argument("--evidence"); setp.add_argument("--reason"); setp.add_argument("--actor", default="orchestrator"); setp.set_defaults(func=set_gate)
+    imp = sub.add_parser("import-v1"); imp.add_argument("--slug", required=True); imp.add_argument("--workspace", required=True); imp.add_argument("--id"); imp.add_argument("--actor", default="orchestrator"); imp.set_defaults(func=import_v1)
+    return p
+
+
+def event_command(args: argparse.Namespace) -> dict[str, Any]:
+    task = task_dir(args, args.id)
+    allowed = {"started", "heartbeat", "artifact_written", "blocked", "failed", "completed", "note"}
+    if args.type not in allowed:
+        raise WorkflowError("event type cannot mutate lifecycle", EXIT["transition"])
+    event = append_event(task, args.id, args.actor, args.type, {"reason": args.reason})
+    return {"event_id": event["event_id"], "type": args.type}
+
+
+def main() -> int:
+    args = parser().parse_args()
+    try:
+        result = args.func(args)
+        output(args, result)
+        return 0
+    except WorkflowError as exc:
+        print(str(exc), file=sys.stderr)
+        return exc.code
+    except OSError as exc:
+        print(f"filesystem error: {exc}", file=sys.stderr)
+        return 6
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

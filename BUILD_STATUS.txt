@@ -1,0 +1,16 @@
+BUILD 0.1 — FOUNDATION
+[done] UE 5.8 project scaffold
+[done] First-person player code
+[done] Interaction code
+[done] Objective / mission trigger system
+[done] Tour vehicle spline-following base
+[done] Dinosaur AI state base
+[done] 1993 route blockout data
+[next] Build binary UE map/landscape inside Unreal Editor
+[next] Input assets and player Blueprint
+[next] Tour-car Blueprint + spline
+[next] T. rex breakout encounter prototype
+[next] Power-system gameplay
+[next] Raptor stalking/attack behavior
+[next] Save/checkpoint system
+[next] PS5-style controller mapping and UI
