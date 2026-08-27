@@ -18,4 +18,15 @@ public:
         float EndZ,
         float& OutZ
     );
+
+    UFUNCTION(BlueprintCallable, Category = "JP|World Query", meta = (WorldContext = "WorldContextObject"))
+    static int32 GetLandscapeHeightAtXY(
+        UObject* WorldContextObject,
+        FVector2D WorldXY
+    );
+
+    UFUNCTION(BlueprintCallable, Category = "JP|World Query", meta = (WorldContext = "WorldContextObject"))
+    static int32 GetLandscapeRawHeightCRC(
+        UObject* WorldContextObject
+    );
 };
