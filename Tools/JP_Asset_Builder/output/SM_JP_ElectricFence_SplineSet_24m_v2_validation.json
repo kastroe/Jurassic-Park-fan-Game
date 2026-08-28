@@ -1,0 +1,53 @@
+{
+  "variants": [
+    "Start",
+    "Middle",
+    "End"
+  ],
+  "total_dimensions_m": [
+    24.000000059604645,
+    0.6099999845027924,
+    6.699999809265137
+  ],
+  "bounding_box_min_m": [
+    -5.960464477539063e-08,
+    -0.25999999046325684,
+    0.0
+  ],
+  "bounding_box_max_m": [
+    24.0,
+    0.3499999940395355,
+    6.699999809265137
+  ],
+  "post_locations_m": [
+    0.0,
+    4.0,
+    8.0,
+    12.0,
+    16.0,
+    20.0,
+    24.0
+  ],
+  "wire_count_per_variant": 11,
+  "wire_boundary_locations_m": [
+    0.0,
+    8.0,
+    16.0,
+    24.0
+  ],
+  "vertex_count": 3876,
+  "face_count": 2632,
+  "preview_path": "C:\\Users\\KASTROE\\Downloads\\JurassicPark1993_FanGame_UE58\\Tools\\JP_Asset_Builder\\output\\SM_JP_ElectricFence_SplineSet_24m_v2_preview.png",
+  "preview_file_size_bytes": 450416,
+  "validation": {
+    "total_length_is_24m": true,
+    "starts_at_x_zero": true,
+    "ends_at_x_24m": true,
+    "grounded_at_z_zero": true,
+    "no_doubled_boundary_posts": true,
+    "shared_boundary_supports_present": true,
+    "post_rhythm_every_4m": true,
+    "wire_ranges_meet_at_8m_and_16m": true,
+    "warning_sign_is_not_repeated": true
+  }
+}

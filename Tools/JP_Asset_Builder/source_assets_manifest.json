@@ -1,0 +1,68 @@
+{
+  "assets": [
+    {
+      "source_file": "C:\\Users\\KASTROE\\Downloads\\obj\\electric_fence_jurassic_park.glb",
+      "source_origin": "User-provided local source asset",
+      "creator": "UNKNOWN",
+      "license": "UNKNOWN",
+      "license_verified": false,
+      "notes": "Priority source for read-only electric-fence inspection. Never overwrite."
+    },
+    {
+      "source_file": "C:\\Users\\KASTROE\\Downloads\\obj\\jurassic_park_gate.glb",
+      "source_origin": "User-provided local source asset; filename differs from supplied '(1)' suffix.",
+      "creator": "UNKNOWN",
+      "license": "UNKNOWN",
+      "license_verified": false,
+      "notes": "Registered only. Do not inspect or modify in V1."
+    },
+    {
+      "source_file": "C:\\Users\\KASTROE\\Downloads\\JurassicPark1993_FanGame_UE58\\Reference\\VisitorCenter\\jurassic_park_visitor_center.glb",
+      "source_origin": "User-provided local source asset",
+      "creator": "UNKNOWN",
+      "license": "UNKNOWN",
+      "license_verified": false,
+      "notes": "Registered only. Do not inspect or modify in V1."
+    },
+    {
+      "source_file": "C:\\Users\\KASTROE\\Downloads\\obj\\jurassic_park_raptor_pen.glb",
+      "source_origin": "User-provided local source asset",
+      "creator": "UNKNOWN",
+      "license": "UNKNOWN",
+      "license_verified": false,
+      "notes": "Registered only. Do not inspect or modify in V1."
+    },
+    {
+      "source_file": "C:\\Users\\KASTROE\\Downloads\\obj\\jurassic_park_worker_village_gate.glb",
+      "source_origin": "User-provided local source asset",
+      "creator": "UNKNOWN",
+      "license": "UNKNOWN",
+      "license_verified": false,
+      "notes": "Registered only. Do not inspect or modify in V1."
+    },
+    {
+      "source_file": "C:\\Users\\KASTROE\\Downloads\\obj\\jurassic_park_jeep_18_low_poly.glb",
+      "source_origin": "User-provided local source asset",
+      "creator": "UNKNOWN",
+      "license": "UNKNOWN",
+      "license_verified": false,
+      "notes": "Registered only. Do not inspect or modify in V1."
+    },
+    {
+      "source_file": "C:\\Users\\KASTROE\\Downloads\\obj\\Jurassic_Park_east_dockSign.blend",
+      "source_origin": "User-provided local source asset",
+      "creator": "UNKNOWN",
+      "license": "UNKNOWN",
+      "license_verified": false,
+      "notes": "Registered only. Do not inspect or modify in V1."
+    },
+    {
+      "source_file": "C:\\Users\\KASTROE\\Downloads\\obj\\Dilpoh_OBJ.zip",
+      "source_origin": "User-provided local source archive",
+      "creator": "UNKNOWN",
+      "license": "UNKNOWN",
+      "license_verified": false,
+      "notes": "Registered only. Archive is not extracted or inspected in V1."
+    }
+  ]
+}

@@ -1,0 +1,119 @@
+{
+  "asset_path": "/Game/JP1993/Environment/Fences/Test/SM_JP_ElectricFence_8m_v11/StaticMeshes/SM_JP_ElectricFence_8m_v11",
+  "test_map": "/Game/Maps/JP_ElectricFence_Test",
+  "actor_labels": [
+    "JP_FenceTest_Module_01",
+    "JP_FenceTest_Module_02",
+    "JP_FenceTest_Module_03"
+  ],
+  "actor_scale": [
+    [
+      1.0,
+      1.0,
+      1.0
+    ],
+    [
+      1.0,
+      1.0,
+      1.0
+    ],
+    [
+      1.0,
+      1.0,
+      1.0
+    ]
+  ],
+  "unreal_dimensions_cm": [
+    800.0000059604645,
+    61.0,
+    670.0
+  ],
+  "unreal_dimensions_m": [
+    8.000000059604645,
+    0.61,
+    6.7
+  ],
+  "module_bounds_cm": [
+    {
+      "min_cm": [
+        -5.9604644775390625e-06,
+        -35.0,
+        0.0
+      ],
+      "max_cm": [
+        800.0,
+        26.0,
+        670.0
+      ],
+      "dimensions_cm": [
+        800.0000059604645,
+        61.0,
+        670.0
+      ],
+      "origin_cm": [
+        399.99999701976776,
+        -4.5,
+        335.0
+      ]
+    },
+    {
+      "min_cm": [
+        799.9999940395355,
+        -35.0,
+        0.0
+      ],
+      "max_cm": [
+        1600.0,
+        26.0,
+        670.0
+      ],
+      "dimensions_cm": [
+        800.0000059604645,
+        61.0,
+        670.0
+      ],
+      "origin_cm": [
+        1199.9999970197678,
+        -4.5,
+        335.0
+      ]
+    },
+    {
+      "min_cm": [
+        1599.9999940395355,
+        -35.0,
+        0.0
+      ],
+      "max_cm": [
+        2400.0,
+        26.0,
+        670.0
+      ],
+      "dimensions_cm": [
+        800.0000059604645,
+        61.0,
+        670.0
+      ],
+      "origin_cm": [
+        1999.9999970197678,
+        -4.5,
+        335.0
+      ]
+    }
+  ],
+  "three_module_bounds_cm": {
+    "min_x": -5.9604644775390625e-06,
+    "max_x": 2400.0,
+    "length_cm": 2400.0000059604645
+  },
+  "join_gaps_cm": [
+    -5.9604644775390625e-06,
+    -5.9604644775390625e-06
+  ],
+  "material_count": 7,
+  "orientation": "Unrotated actors: imported local +X is Unreal +X and imported local +Z is Unreal +Z.",
+  "pivot_behavior": "Actor bounds start at each actor X location and at Z=0.",
+  "endpoint_post_note": "Default modules include both endpoint posts. At each join, the adjacent endpoint sections meet with no bounds gap; inspect the saved test map visually before spline work.",
+  "visual_capture_status": "Not captured by UnrealEditor-Cmd because it runs with the Null RHI; open the isolated test map in the full editor for rendered screenshots.",
+  "import_warning": "Interchange imported the GLB successfully. The initial commandlet then crashed while creating a new editor world; no production map was loaded or changed."
+}

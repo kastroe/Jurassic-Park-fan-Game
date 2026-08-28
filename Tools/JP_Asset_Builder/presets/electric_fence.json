@@ -1,0 +1,17 @@
+{
+  "section_length_m": 8.0,
+  "post_height_m": 6.7,
+  "post_width_m": 0.36,
+  "post_depth_m": 0.4,
+  "wire_count": 11,
+  "wire_start_height_m": 0.75,
+  "wire_end_height_m": 6.2,
+  "wire_radius_m": 0.012,
+  "insulator_radius_m": 0.06,
+  "insulator_length_m": 0.12,
+  "include_start_post": true,
+  "include_end_post": true,
+  "mid_post_enabled": true,
+  "mid_post_x_m": 4.0,
+  "warning_sign_enabled": true
+}

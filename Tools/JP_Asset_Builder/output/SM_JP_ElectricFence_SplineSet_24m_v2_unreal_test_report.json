@@ -1,0 +1,115 @@
+{
+  "test_map": "/Game/Maps/JP_ElectricFence_Test",
+  "asset_paths": [
+    "/Game/JP1993/Environment/Fences/Test/V2/SM_JP_ElectricFence_8m_Start_v2/StaticMeshes/SM_JP_ElectricFence_8m_Start_v2",
+    "/Game/JP1993/Environment/Fences/Test/V2/SM_JP_ElectricFence_8m_Middle_v2/StaticMeshes/SM_JP_ElectricFence_8m_Middle_v2",
+    "/Game/JP1993/Environment/Fences/Test/V2/SM_JP_ElectricFence_8m_End_v2/StaticMeshes/SM_JP_ElectricFence_8m_End_v2"
+  ],
+  "actors": [
+    "JP_FenceTest_V2_Start",
+    "JP_FenceTest_V2_Middle",
+    "JP_FenceTest_V2_End"
+  ],
+  "actor_locations_cm": [
+    [
+      0.0,
+      0.0,
+      0.0
+    ],
+    [
+      800.0,
+      0.0,
+      0.0
+    ],
+    [
+      1600.0,
+      0.0,
+      0.0
+    ]
+  ],
+  "actor_scale": [
+    1.0,
+    1.0,
+    1.0
+  ],
+  "module_bounds_cm": [
+    {
+      "min_cm": [
+        -5.9604644775390625e-06,
+        -35.0,
+        0.0
+      ],
+      "max_cm": [
+        800.0,
+        26.0,
+        670.0
+      ],
+      "dimensions_cm": [
+        800.0000059604645,
+        61.0,
+        670.0
+      ]
+    },
+    {
+      "min_cm": [
+        800.0,
+        -35.0,
+        0.0
+      ],
+      "max_cm": [
+        1600.0,
+        26.0,
+        670.0
+      ],
+      "dimensions_cm": [
+        800.0,
+        61.0,
+        670.0
+      ]
+    },
+    {
+      "min_cm": [
+        1600.0,
+        -35.0,
+        0.0
+      ],
+      "max_cm": [
+        2400.0,
+        26.0,
+        670.0
+      ],
+      "dimensions_cm": [
+        800.0,
+        61.0,
+        670.0
+      ]
+    }
+  ],
+  "combined_bounds_cm": {
+    "min_x": -5.9604644775390625e-06,
+    "max_x": 2400.0,
+    "length_cm": 2400.0000059604645
+  },
+  "join_gaps_cm": [
+    0.0,
+    0.0
+  ],
+  "expected_post_positions_cm": [
+    0,
+    400,
+    800,
+    1200,
+    1600,
+    2000,
+    2400
+  ],
+  "post_geometry_overlap_at_joins": false,
+  "wires_meet_at_joins": true,
+  "material_slot_counts": [
+    7,
+    5,
+    5
+  ],
+  "warning_sign_count": 1,
+  "import_warning": "No V2 mesh-import warning was reported. Project-wide invalid Planning Icon package warnings are unrelated to this fence test."
+}

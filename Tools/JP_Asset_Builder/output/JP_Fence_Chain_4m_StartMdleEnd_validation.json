@@ -1,0 +1,94 @@
+{
+  "module_count": 3,
+  "modules": [
+    {
+      "variant": "start",
+      "local_length_m": 4.0,
+      "offset_m": 0.0,
+      "global_x_range_m": [
+        0.0,
+        4.0
+      ],
+      "post_local_x_m": [
+        0.18,
+        3.82
+      ],
+      "owned_post_global_x_m": [
+        0.18,
+        3.82
+      ],
+      "wire_y_m": 0.32
+    },
+    {
+      "variant": "middle",
+      "local_length_m": 4.0,
+      "offset_m": 4.0,
+      "global_x_range_m": [
+        4.0,
+        8.0
+      ],
+      "post_local_x_m": [
+        3.82
+      ],
+      "owned_post_global_x_m": [
+        7.82
+      ],
+      "wire_y_m": 0.32
+    },
+    {
+      "variant": "end",
+      "local_length_m": 4.0,
+      "offset_m": 8.0,
+      "global_x_range_m": [
+        8.0,
+        12.0
+      ],
+      "post_local_x_m": [
+        3.82
+      ],
+      "owned_post_global_x_m": [
+        11.82
+      ],
+      "wire_y_m": 0.32
+    }
+  ],
+  "global_post_locations_m": [
+    0.18,
+    3.82,
+    7.82,
+    11.82
+  ],
+  "total_length_m": 12.0,
+  "total_dimensions_m": [
+    12.000000059604645,
+    0.6099999845027924,
+    6.699999809265137
+  ],
+  "bounding_box_min_m": [
+    -5.960464477539063e-08,
+    -0.25999999046325684,
+    0.0
+  ],
+  "bounding_box_max_m": [
+    12.0,
+    0.3499999940395355,
+    6.699999809265137
+  ],
+  "wire_y_m": 0.32,
+  "wire_count": 11,
+  "post_height_m": 6.7,
+  "vertex_count": 2472,
+  "face_count": 1672,
+  "preview_path": "C:\\Users\\KASTROE\\Downloads\\JurassicPark1993_FanGame_UE58\\Tools\\JP_Asset_Builder\\output\\JP_Fence_Chain_preview.png",
+  "preview_file_size_bytes": 509274,
+  "validation": {
+    "total_length_matches_sum": true,
+    "starts_at_x_zero": true,
+    "ends_at_total_length": true,
+    "grounded_at_z_zero": true,
+    "no_doubled_boundary_posts": true,
+    "boundary_post_at_every_join": true,
+    "wire_lateral_y_aligns": true,
+    "warning_sign_count_is_one": true
+  }
+}

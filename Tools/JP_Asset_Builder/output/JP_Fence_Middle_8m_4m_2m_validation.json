@@ -1,0 +1,36 @@
+{
+  "modules": [
+    {
+      "length_m": 8.0,
+      "offset_m": 0.0
+    },
+    {
+      "length_m": 4.0,
+      "offset_m": 10.0
+    },
+    {
+      "length_m": 2.0,
+      "offset_m": 16.0
+    }
+  ],
+  "total_dimensions_m": [
+    18.0,
+    0.6099999845027924,
+    6.699999809265137
+  ],
+  "bounding_box_min_m": [
+    0.0,
+    -0.25999999046325684,
+    0.0
+  ],
+  "bounding_box_max_m": [
+    18.0,
+    0.3499999940395355,
+    6.699999809265137
+  ],
+  "vertex_count": 2400,
+  "face_count": 1610,
+  "purpose": "Visual scale comparison of Middle variants; not a placement chain.",
+  "preview_path": "C:\\Users\\KASTROE\\Downloads\\JurassicPark1993_FanGame_UE58\\Tools\\JP_Asset_Builder\\output\\JP_Fence_Middle_8m_4m_2m_preview.png",
+  "preview_file_size_bytes": 450483
+}

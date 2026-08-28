@@ -1,0 +1,202 @@
+{
+  "mesh_bounds": {
+    "start": {
+      "bounds_center_xyz": [
+        399.99999701976776,
+        -4.5,
+        335.0
+      ],
+      "bounds_half_extent_xyz": [
+        400.00000298023224,
+        30.5,
+        335.0
+      ],
+      "total_size_xyz": [
+        800.0000059604645,
+        61.0,
+        670.0
+      ],
+      "longest_axis": "X",
+      "longest_axis_cm": 800.0000059604645
+    },
+    "middle": {
+      "bounds_center_xyz": [
+        400.0,
+        -4.5,
+        335.0
+      ],
+      "bounds_half_extent_xyz": [
+        400.0,
+        30.5,
+        335.0
+      ],
+      "total_size_xyz": [
+        800.0,
+        61.0,
+        670.0
+      ],
+      "longest_axis": "X",
+      "longest_axis_cm": 800.0
+    },
+    "end": {
+      "bounds_center_xyz": [
+        400.0,
+        -4.5,
+        335.0
+      ],
+      "bounds_half_extent_xyz": [
+        400.0,
+        30.5,
+        335.0
+      ],
+      "total_size_xyz": [
+        800.0,
+        61.0,
+        670.0
+      ],
+      "longest_axis": "X",
+      "longest_axis_cm": 800.0
+    }
+  },
+  "straight_test": {
+    "spline_length_cm": 2400.0,
+    "spline_points": 2,
+    "module_count": 3,
+    "transforms": [
+      {
+        "module_index": 0,
+        "mesh_name": "SM_JP_ElectricFence_8m_Start_v2",
+        "location_xyz": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_py": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "forward_xyz": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "right_xyz": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "up_xyz": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "spline_location_xyz": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "spline_tangent_normalized_xyz": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "tangent_heading_deg": 0.0,
+        "rotation_yaw_deg": 0.0,
+        "delta_yaw_deg": 0.0,
+        "distance_along_spline": 0.0
+      },
+      {
+        "module_index": 1,
+        "mesh_name": "SM_JP_ElectricFence_8m_Middle_v2",
+        "location_xyz": [
+          800.0000238418579,
+          0.0,
+          0.0
+        ],
+        "rotation_py": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "forward_xyz": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "right_xyz": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "up_xyz": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "spline_location_xyz": [
+          800.0000238418579,
+          0.0,
+          0.0
+        ],
+        "spline_tangent_normalized_xyz": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "tangent_heading_deg": 0.0,
+        "rotation_yaw_deg": 0.0,
+        "delta_yaw_deg": 0.0,
+        "distance_along_spline": 800.0
+      },
+      {
+        "module_index": 2,
+        "mesh_name": "SM_JP_ElectricFence_8m_End_v2",
+        "location_xyz": [
+          1600.0000476837158,
+          0.0,
+          0.0
+        ],
+        "rotation_py": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "forward_xyz": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "right_xyz": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "up_xyz": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "spline_location_xyz": [
+          1600.0000476837158,
+          0.0,
+          0.0
+        ],
+        "spline_tangent_normalized_xyz": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "tangent_heading_deg": 0.0,
+        "rotation_yaw_deg": 0.0,
+        "delta_yaw_deg": 0.0,
+        "distance_along_spline": 1600.0
+      }
+    ]
+  },
+  "code_assumption": {
+    "local_axis_aligned_to_tangent": "+X",
+    "up_axis": "+Z (world up, Tangent.Z zeroed)",
+    "rotation_method": "FRotationMatrix::MakeFromX(Tangent.GetSafeNormal()).Rotator()"
+  }
+}

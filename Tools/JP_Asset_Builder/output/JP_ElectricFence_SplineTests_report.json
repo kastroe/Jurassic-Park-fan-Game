@@ -1,0 +1,178 @@
+{
+  "test_map": "/Game/Maps/JP_ElectricFence_Test",
+  "actor_class": "JP_ElectricFenceSpline",
+  "module_length_cm": 800.0,
+  "tests": {
+    "JP_FenceSpline_Test_Straight": {
+      "spline_length_cm": 2400.0,
+      "section_count": 3,
+      "start_count": 1,
+      "middle_count": 1,
+      "end_count": 1,
+      "unused_remainder_cm": 0.0,
+      "generated_static_mesh_component_count": 3,
+      "section_world_positions_cm": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          800.0000238418579,
+          0.0,
+          0.0
+        ],
+        [
+          1600.0000476837158,
+          0.0,
+          0.0
+        ]
+      ],
+      "section_yaws_degrees": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "average_yaw_delta_degrees": 0.0,
+      "max_yaw_delta_degrees": 0.0,
+      "predicted_rigid_join_offsets_cm": [
+        2.384185791015625e-05,
+        2.384185791015625e-05
+      ],
+      "gaps_over_5cm": [],
+      "angular_quality": "acceptable"
+    },
+    "JP_FenceSpline_Test_GentleCurve": {
+      "spline_length_cm": 5359.19287109375,
+      "section_count": 6,
+      "start_count": 1,
+      "middle_count": 4,
+      "end_count": 1,
+      "unused_remainder_cm": 559.19287109375,
+      "generated_static_mesh_component_count": 6,
+      "section_world_positions_cm": [
+        [
+          0.0,
+          4000.0,
+          0.0
+        ],
+        [
+          798.8116949796677,
+          3959.946072101593,
+          0.0
+        ],
+        [
+          1593.8024124596268,
+          4018.426133180037,
+          0.0
+        ],
+        [
+          2367.2244280576706,
+          4221.059963107109,
+          0.0
+        ],
+        [
+          3077.3797631263733,
+          4583.610653877258,
+          0.0
+        ],
+        [
+          3650.04875510931,
+          5139.03234899044,
+          0.0
+        ]
+      ],
+      "section_yaws_degrees": [
+        0.0,
+        -2.409220729355809,
+        11.29937940150996,
+        19.551507878763342,
+        35.5967190816746,
+        49.79338971910579
+      ],
+      "average_yaw_delta_degrees": 10.922366235563482,
+      "max_yaw_delta_degrees": 16.045211202911247,
+      "predicted_rigid_join_offsets_cm": [
+        40.071551116872584,
+        92.20963176614305,
+        47.20219392562838,
+        104.41958562978797,
+        118.8097550152794
+      ],
+      "gaps_over_5cm": [
+        40.071551116872584,
+        92.20963176614305,
+        47.20219392562838,
+        104.41958562978797,
+        118.8097550152794
+      ],
+      "angular_quality": "potentially_ugly"
+    },
+    "JP_FenceSpline_Test_SharpCurve": {
+      "spline_length_cm": 3626.971435546875,
+      "section_count": 4,
+      "start_count": 1,
+      "middle_count": 2,
+      "end_count": 1,
+      "unused_remainder_cm": 426.971435546875,
+      "generated_static_mesh_component_count": 4,
+      "section_world_positions_cm": [
+        [
+          0.0,
+          10000.0,
+          0.0
+        ],
+        [
+          792.6132440567017,
+          9996.425259113312,
+          0.0
+        ],
+        [
+          1208.8141313870437,
+          10642.399980837945,
+          0.0
+        ],
+        [
+          1258.2048147916794,
+          11441.424337029457,
+          0.0
+        ]
+      ],
+      "section_yaws_degrees": [
+        0.0,
+        25.091086221073688,
+        78.98079010442552,
+        93.35328860502975
+      ],
+      "average_yaw_delta_degrees": 31.11776286834325,
+      "max_yaw_delta_degrees": 53.88970388335184,
+      "predicted_rigid_join_offsets_cm": [
+        8.206274171194496,
+        434.89673473736224,
+        104.43211598865267
+      ],
+      "gaps_over_5cm": [
+        8.206274171194496,
+        434.89673473736224,
+        104.43211598865267
+      ],
+      "angular_quality": "unacceptable"
+    }
+  },
+  "straight_expected_post_positions_cm": [
+    0,
+    400,
+    800,
+    1200,
+    1600,
+    2000,
+    2400
+  ],
+  "post_duplication": false,
+  "material_slot_counts": {
+    "start": 7,
+    "middle": 5,
+    "end": 5
+  },
+  "warnings": "No spline mesh deformation is used. Rigid curve join offsets and yaw deltas are reported for human review."
+}
