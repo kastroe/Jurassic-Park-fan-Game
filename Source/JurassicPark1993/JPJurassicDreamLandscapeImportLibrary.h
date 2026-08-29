@@ -54,4 +54,7 @@ public:
 
     UFUNCTION(BlueprintCallable, Category = "JP|Jurassic Dream|Landscape")
     static bool GradeTourRoadLandscape();
+
+    UFUNCTION(BlueprintCallable, Category = "JP|Jurassic Dream|Landscape|VisitorCenter")
+    static bool GradeVisitorCenterPlatform();
 };

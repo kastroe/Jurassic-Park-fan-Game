@@ -13,6 +13,7 @@
 #include "Landscape.h"
 #include "LandscapeDataAccess.h"
 #include "LandscapeEdit.h"
+#include "LandscapeEditLayer.h"
 #include "LandscapeInfo.h"
 #include "LandscapeProxy.h"
 #include "Materials/MaterialInterface.h"
@@ -22,11 +23,39 @@
 
 namespace
 {
-    const TCHAR* const TargetMapPackage = TEXT("/Game/Maps/JP_JurassicDream_Terrain_Test");
+    // Permanent reference (read-only gold master). Never mutated by any function.
+    const TCHAR* const MASTER_REFERENCE_MAP = TEXT("/Game/Maps/JP_JurassicDream_Terrain_Test");
+    // Editable construction map. All mutating / destructive functions target ONLY this.
+    const TCHAR* const CONSTRUCTION_MAP = TEXT("/Game/Maps/JP_JurassicDream_Construction");
+
     const TCHAR* const HeightmapRelativePath = TEXT("Reference/JurassicDreamTerrain/JurassicDream_4081x4081_UE.r16");
     constexpr int32 HeightmapResolution = 4081;
     constexpr int32 HeightmapQuads = 4080;
     constexpr int32 HeightmapBytes = HeightmapResolution * HeightmapResolution * sizeof(uint16);
+
+    FString ActiveMapName(UWorld* World)
+    {
+        if (!World || !World->PersistentLevel)
+        {
+            return FString();
+        }
+        return World->GetOutermost()->GetName();
+    }
+
+    bool IsMasterReferenceMap(UWorld* World)
+    {
+        return ActiveMapName(World) == MASTER_REFERENCE_MAP;
+    }
+
+    bool IsConstructionMap(UWorld* World)
+    {
+        return ActiveMapName(World) == CONSTRUCTION_MAP;
+    }
+
+    bool IsReadOnlyAllowedMap(UWorld* World)
+    {
+        return IsMasterReferenceMap(World) || IsConstructionMap(World);
+    }
 }
 
 bool UJPJurassicDreamLandscapeImportLibrary::ImportJurassicDreamTerrain()
@@ -44,10 +73,10 @@ bool UJPJurassicDreamLandscapeImportLibrary::ImportJurassicDreamTerrain()
         return false;
     }
 
-    if (World->GetOutermost()->GetName() != TargetMapPackage)
+    if (!IsMasterReferenceMap(World))
     {
-        UE_LOG(LogTemp, Error, TEXT("Jurassic Dream import refused: active map is %s, expected %s."),
-            *World->GetOutermost()->GetName(), TargetMapPackage);
+        UE_LOG(LogTemp, Error, TEXT("Jurassic Dream import refused: active map is %s, expected master %s."),
+            *World->GetOutermost()->GetName(), MASTER_REFERENCE_MAP);
         return false;
     }
 
@@ -149,9 +178,9 @@ bool UJPJurassicDreamLandscapeImportLibrary::AssignTempMarkerFolders()
     }
 
     UWorld* World = GEditor->GetEditorWorldContext().World();
-    if (!World || !World->PersistentLevel || World->GetOutermost()->GetName() != TargetMapPackage)
+    if (!IsConstructionMap(World))
     {
-        UE_LOG(LogTemp, Error, TEXT("Marker folders refused: target map is not active."));
+        UE_LOG(LogTemp, Error, TEXT("Marker folders refused: only the construction map may be active."));
         return false;
     }
 
@@ -196,9 +225,9 @@ bool UJPJurassicDreamLandscapeImportLibrary::SnapTempMarkersToLandscape()
     }
 
     UWorld* World = GEditor->GetEditorWorldContext().World();
-    if (!World || !World->PersistentLevel || World->GetOutermost()->GetName() != TargetMapPackage)
+    if (!IsConstructionMap(World))
     {
-        UE_LOG(LogTemp, Error, TEXT("Marker snap refused: target map is not active."));
+        UE_LOG(LogTemp, Error, TEXT("Marker snap refused: only the construction map may be active."));
         return false;
     }
 
@@ -335,9 +364,9 @@ namespace
             return false;
         }
         OutWorld = GEditor->GetEditorWorldContext().World();
-        if (!OutWorld || !OutWorld->PersistentLevel || OutWorld->GetOutermost()->GetName() != TargetMapPackage)
+        if (!IsReadOnlyAllowedMap(OutWorld))
         {
-            UE_LOG(LogTemp, Error, TEXT("JP1993 refused: target map is not active."));
+            UE_LOG(LogTemp, Error, TEXT("JP1993 refused: neither master nor construction is active."));
             return false;
         }
         int32 LandscapeCount = 0;
@@ -396,6 +425,11 @@ bool UJPJurassicDreamLandscapeImportLibrary::SpawnJP1993Markers(const FString& C
     ALandscapeProxy* Landscape = nullptr;
     if (!GetTargetWorldForJP93(World, Landscape))
     {
+        return false;
+    }
+    if (!IsConstructionMap(World))
+    {
+        UE_LOG(LogTemp, Error, TEXT("JP1993 spawn refused: marker spawning may only run on the construction map."));
         return false;
     }
 
@@ -508,9 +542,9 @@ bool UJPJurassicDreamLandscapeImportLibrary::CreateTourRoadGuide()
     }
 
     UWorld* World = GEditor->GetEditorWorldContext().World();
-    if (!World || !World->PersistentLevel || World->GetOutermost()->GetName() != TargetMapPackage)
+    if (!IsConstructionMap(World))
     {
-        UE_LOG(LogTemp, Error, TEXT("TourRoad guide refused: target map is not active."));
+        UE_LOG(LogTemp, Error, TEXT("TourRoad guide refused: only the construction map may be active."));
         return false;
     }
 
@@ -734,9 +768,9 @@ bool UJPJurassicDreamLandscapeImportLibrary::FixTourRoadGuideCentralRidge()
         return false;
     }
     UWorld* World = GEditor->GetEditorWorldContext().World();
-    if (!World || !World->PersistentLevel || World->GetOutermost()->GetName() != TargetMapPackage)
+    if (!IsConstructionMap(World))
     {
-        UE_LOG(LogTemp, Error, TEXT("FixTourRoad refused: target map is not active."));
+        UE_LOG(LogTemp, Error, TEXT("FixTourRoad refused: only the construction map may be active."));
         return false;
     }
 
@@ -1117,9 +1151,9 @@ bool UJPJurassicDreamLandscapeImportLibrary::EnhanceTourRoadVisualization()
         return false;
     }
     UWorld* World = GEditor->GetEditorWorldContext().World();
-    if (!World || !World->PersistentLevel || World->GetOutermost()->GetName() != TargetMapPackage)
+    if (!IsConstructionMap(World))
     {
-        UE_LOG(LogTemp, Error, TEXT("EnhanceTourRoadVisualization refused: target map is not active."));
+        UE_LOG(LogTemp, Error, TEXT("EnhanceTourRoadVisualization refused: only the construction map may be active."));
         return false;
     }
     ALandscapeProxy* Landscape = nullptr;
@@ -1262,9 +1296,9 @@ bool UJPJurassicDreamLandscapeImportLibrary::FixTourRoadCusps()
         return false;
     }
     UWorld* World = GEditor->GetEditorWorldContext().World();
-    if (!World || !World->PersistentLevel || World->GetOutermost()->GetName() != TargetMapPackage)
+    if (!IsConstructionMap(World))
     {
-        UE_LOG(LogTemp, Error, TEXT("FixCusps refused: target map is not active."));
+        UE_LOG(LogTemp, Error, TEXT("FixCusps refused: only the construction map may be active."));
         return false;
     }
     ALandscapeProxy* Landscape = nullptr;
@@ -1618,9 +1652,9 @@ bool UJPJurassicDreamLandscapeImportLibrary::FlattenTourRoadCuspsTangents()
         return false;
     }
     UWorld* World = GEditor->GetEditorWorldContext().World();
-    if (!World || !World->PersistentLevel || World->GetOutermost()->GetName() != TargetMapPackage)
+    if (!IsConstructionMap(World))
     {
-        UE_LOG(LogTemp, Error, TEXT("FlattenCusps refused: target map is not active."));
+        UE_LOG(LogTemp, Error, TEXT("FlattenCusps refused: only the construction map may be active."));
         return false;
     }
     ALandscapeProxy* Landscape = nullptr;
@@ -1968,9 +2002,9 @@ bool UJPJurassicDreamLandscapeImportLibrary::FixTourRoadWaterCrossing()
     }
 
     UWorld* World = GEditor->GetEditorWorldContext().World();
-    if (!World || !World->PersistentLevel || World->GetOutermost()->GetName() != TargetMapPackage)
+    if (!IsConstructionMap(World))
     {
-        UE_LOG(LogTemp, Error, TEXT("JPWATER_FIX refused: target map is not active."));
+        UE_LOG(LogTemp, Error, TEXT("JPWATER_FIX refused: only the construction map may be active."));
         return false;
     }
 
@@ -2380,9 +2414,9 @@ bool UJPJurassicDreamLandscapeImportLibrary::BuildTourRoadVisualPass()
     }
 
     UWorld* World = GEditor->GetEditorWorldContext().World();
-    if (!World || !World->PersistentLevel || World->GetOutermost()->GetName() != TargetMapPackage)
+    if (!IsConstructionMap(World))
     {
-        UE_LOG(LogTemp, Error, TEXT("JPTOUR_FINAL refused: target map is not active."));
+        UE_LOG(LogTemp, Error, TEXT("JPTOUR_FINAL refused: only the construction map may be active."));
         return false;
     }
 
@@ -2634,9 +2668,9 @@ bool UJPJurassicDreamLandscapeImportLibrary::ProbeTourRoadGrading()
         return false;
     }
     UWorld* World = GEditor->GetEditorWorldContext().World();
-    if (!World || !World->PersistentLevel || World->GetOutermost()->GetName() != TargetMapPackage)
+    if (!IsReadOnlyAllowedMap(World))
     {
-        UE_LOG(LogTemp, Error, TEXT("JPGRADING_PROBE refused: target test map is not active."));
+        UE_LOG(LogTemp, Error, TEXT("JPGRADING_PROBE refused: neither master nor construction is active."));
         return false;
     }
 
@@ -2800,9 +2834,9 @@ bool UJPJurassicDreamLandscapeImportLibrary::GradeTourRoadLandscape()
         return false;
     }
     UWorld* World = GEditor->GetEditorWorldContext().World();
-    if (!World || !World->PersistentLevel || World->GetOutermost()->GetName() != TargetMapPackage)
+    if (!IsConstructionMap(World))
     {
-        UE_LOG(LogTemp, Error, TEXT("JPGRADING refused: only the target test map may be active."));
+        UE_LOG(LogTemp, Error, TEXT("JPGRADING refused: only the construction map may be active."));
         return false;
     }
 
@@ -3157,6 +3191,496 @@ bool UJPJurassicDreamLandscapeImportLibrary::GradeTourRoadLandscape()
     return true;
 }
 
+bool UJPJurassicDreamLandscapeImportLibrary::GradeVisitorCenterPlatform()
+{
+    if (!GEditor)
+    {
+        UE_LOG(LogTemp, Error, TEXT("JPVC_GRADING refused: editor is unavailable."));
+        return false;
+    }
+
+    UWorld* World = GEditor->GetEditorWorldContext().World();
+    if (!IsConstructionMap(World))
+    {
+        UE_LOG(LogTemp, Error, TEXT("JPVC_GRADING refused: only the construction map may be active."));
+        return false;
+    }
+
+    ALandscapeProxy* Landscape = nullptr;
+    int32 LandscapeCount = 0;
+    for (TActorIterator<ALandscapeProxy> It(World); It; ++It)
+    {
+        ++LandscapeCount;
+        Landscape = *It;
+    }
+    if (LandscapeCount != 1 || !Landscape)
+    {
+        UE_LOG(LogTemp, Error, TEXT("JPVC_GRADING refused: expected exactly 1 Landscape, found %d."), LandscapeCount);
+        return false;
+    }
+
+    ULandscapeInfo* LandscapeInfo = Landscape->GetLandscapeInfo();
+    FIntRect Extent;
+    if (!LandscapeInfo || !LandscapeInfo->SupportsLandscapeEditing()
+        || !LandscapeInfo->IsLandscapeEditableWorld()
+        || !LandscapeInfo->GetLandscapeExtent(Landscape, Extent))
+    {
+        UE_LOG(LogTemp, Error, TEXT("JPVC_GRADING refused: Landscape does not expose safe local editing."));
+        return false;
+    }
+
+    ALandscape* LandscapeActor = LandscapeInfo->LandscapeActor.Get();
+    const TArray<const ULandscapeEditLayerBase*> EditLayers = LandscapeActor
+        ? LandscapeActor->GetEditLayersConst()
+        : TArray<const ULandscapeEditLayerBase*>();
+    if (!LandscapeActor || EditLayers.Num() != 1 || !EditLayers[0])
+    {
+        UE_LOG(LogTemp, Error, TEXT("JPVC_GRADING refused: expected exactly one persistent Landscape edit layer, found %d."), EditLayers.Num());
+        return false;
+    }
+    const FGuid EditLayerGuid = EditLayers[0]->GetGuid();
+
+    constexpr double TargetZ = 13290.0;
+    constexpr double InnerMinX = 162000.0;
+    constexpr double InnerMaxX = 168000.0;
+    constexpr double InnerMinY = 212500.0;
+    constexpr double InnerMaxY = 217500.0;
+    constexpr double ApronMinX = 160000.0;
+    constexpr double ApronMaxX = 170000.0;
+    constexpr double ApronMinY = 210500.0;
+    constexpr double ApronMaxY = 219500.0;
+    constexpr double OuterMinX = 157500.0;
+    constexpr double OuterMaxX = 172500.0;
+    constexpr double OuterMinY = 208000.0;
+    constexpr double OuterMaxY = 222000.0;
+    constexpr double MaximumApronSlopeDegrees = 5.0;
+    constexpr double EngineeringApronSlopeDegrees = 4.0;
+    const double MaximumApronGrade = FMath::Tan(FMath::DegreesToRadians(EngineeringApronSlopeDegrees));
+
+    const FTransform LandscapeTransform = Landscape->LandscapeActorToWorld();
+    const FRotator LandscapeRotation = LandscapeTransform.GetRotation().Rotator();
+    const bool bAxisAlignedYaw = FMath::IsNearlyZero(LandscapeRotation.Yaw, 0.001)
+        || FMath::IsNearlyEqual(FMath::Abs(LandscapeRotation.Yaw), 180.0, 0.001);
+    if (!FMath::IsNearlyZero(LandscapeRotation.Pitch, 0.001)
+        || !FMath::IsNearlyZero(LandscapeRotation.Roll, 0.001)
+        || !bAxisAlignedYaw
+        || FMath::IsNearlyZero(LandscapeTransform.GetScale3D().X)
+        || FMath::IsNearlyZero(LandscapeTransform.GetScale3D().Y)
+        || FMath::IsNearlyZero(LandscapeTransform.GetScale3D().Z))
+    {
+        UE_LOG(LogTemp, Error, TEXT("JPVC_GRADING refused: expected an axis-aligned Landscape transform."));
+        return false;
+    }
+
+    const FVector OuterLocalA = LandscapeTransform.InverseTransformPosition(FVector(OuterMinX, OuterMinY, 0.0));
+    const FVector OuterLocalB = LandscapeTransform.InverseTransformPosition(FVector(OuterMaxX, OuterMaxY, 0.0));
+    const int32 PatchMinX = FMath::Clamp(FMath::CeilToInt(FMath::Min(OuterLocalA.X, OuterLocalB.X)), Extent.Min.X, Extent.Max.X);
+    const int32 PatchMaxX = FMath::Clamp(FMath::FloorToInt(FMath::Max(OuterLocalA.X, OuterLocalB.X)), Extent.Min.X, Extent.Max.X);
+    const int32 PatchMinY = FMath::Clamp(FMath::CeilToInt(FMath::Min(OuterLocalA.Y, OuterLocalB.Y)), Extent.Min.Y, Extent.Max.Y);
+    const int32 PatchMaxY = FMath::Clamp(FMath::FloorToInt(FMath::Max(OuterLocalA.Y, OuterLocalB.Y)), Extent.Min.Y, Extent.Max.Y);
+    if (PatchMinX > PatchMaxX || PatchMinY > PatchMaxY)
+    {
+        UE_LOG(LogTemp, Error, TEXT("JPVC_GRADING refused: approved outer bounds do not intersect Landscape vertices."));
+        return false;
+    }
+
+    const int32 ReadMinX = FMath::Max(PatchMinX - 1, Extent.Min.X);
+    const int32 ReadMaxX = FMath::Min(PatchMaxX + 1, Extent.Max.X);
+    const int32 ReadMinY = FMath::Max(PatchMinY - 1, Extent.Min.Y);
+    const int32 ReadMaxY = FMath::Min(PatchMaxY + 1, Extent.Max.Y);
+    const int32 ReadWidth = ReadMaxX - ReadMinX + 1;
+    const int32 ReadHeight = ReadMaxY - ReadMinY + 1;
+    TArray<uint16> OriginalReadHeights;
+    OriginalReadHeights.SetNumUninitialized(ReadWidth * ReadHeight);
+    {
+        FLandscapeEditDataInterface ReadEdit(LandscapeInfo);
+        ReadEdit.GetHeightDataFast(ReadMinX, ReadMinY, ReadMaxX, ReadMaxY, OriginalReadHeights.GetData(), ReadWidth);
+    }
+
+    const int32 PatchWidth = PatchMaxX - PatchMinX + 1;
+    const int32 PatchHeight = PatchMaxY - PatchMinY + 1;
+    const int32 PatchVertexCount = PatchWidth * PatchHeight;
+    auto PatchIndex = [&](int32 X, int32 Y)
+    {
+        return (Y - PatchMinY) * PatchWidth + X - PatchMinX;
+    };
+    auto ReadIndex = [&](int32 X, int32 Y)
+    {
+        return (Y - ReadMinY) * ReadWidth + X - ReadMinX;
+    };
+    auto OriginalWorldZ = [&](int32 X, int32 Y)
+    {
+        const uint16 RawHeight = OriginalReadHeights[ReadIndex(X, Y)];
+        return LandscapeTransform.TransformPosition(
+            FVector(X, Y, LandscapeDataAccess::GetLocalHeight(RawHeight))).Z;
+    };
+    auto IsInside = [](double X, double Y, double MinX, double MaxX, double MinY, double MaxY)
+    {
+        return X >= MinX && X <= MaxX && Y >= MinY && Y <= MaxY;
+    };
+
+    TArray<uint16> OriginalPatchHeights;
+    OriginalPatchHeights.SetNumUninitialized(PatchVertexCount);
+    TArray<double> EngineeredWorldHeights;
+    EngineeredWorldHeights.SetNumUninitialized(PatchVertexCount);
+    TBitArray<> ApronVertices(false, PatchVertexCount);
+    TBitArray<> InnerVertices(false, PatchVertexCount);
+    double InnerMinimum = TNumericLimits<double>::Max();
+    double InnerMaximum = -TNumericLimits<double>::Max();
+    int32 InnerVertexCount = 0;
+
+    for (int32 Y = PatchMinY; Y <= PatchMaxY; ++Y)
+    {
+        for (int32 X = PatchMinX; X <= PatchMaxX; ++X)
+        {
+            const int32 Index = PatchIndex(X, Y);
+            OriginalPatchHeights[Index] = OriginalReadHeights[ReadIndex(X, Y)];
+            const FVector WorldVertex = LandscapeTransform.TransformPosition(FVector(X, Y, 0.0));
+            const double OriginalZ = OriginalWorldZ(X, Y);
+            EngineeredWorldHeights[Index] = OriginalZ;
+            if (IsInside(WorldVertex.X, WorldVertex.Y, ApronMinX, ApronMaxX, ApronMinY, ApronMaxY))
+            {
+                ApronVertices[Index] = true;
+                EngineeredWorldHeights[Index] = TargetZ;
+            }
+            if (IsInside(WorldVertex.X, WorldVertex.Y, InnerMinX, InnerMaxX, InnerMinY, InnerMaxY))
+            {
+                InnerVertices[Index] = true;
+                InnerMinimum = FMath::Min(InnerMinimum, OriginalZ);
+                InnerMaximum = FMath::Max(InnerMaximum, OriginalZ);
+                ++InnerVertexCount;
+            }
+        }
+    }
+
+    const double ExpectedMaximumCut = InnerMaximum - TargetZ;
+    const double ExpectedMaximumFill = TargetZ - InnerMinimum;
+    if (InnerVertexCount == 0 || ExpectedMaximumCut < 320.0 || ExpectedMaximumCut > 360.0
+        || ExpectedMaximumFill < 120.0 || ExpectedMaximumFill > 180.0)
+    {
+        UE_LOG(LogTemp, Error, TEXT("JPVC_GRADING refused: pre-edit inner terrain differs from the approved baseline. VERTICES=%d MIN=%.3f MAX=%.3f CUT=%.3f FILL=%.3f."),
+            InnerVertexCount, InnerMinimum, InnerMaximum, ExpectedMaximumCut, ExpectedMaximumFill);
+        return false;
+    }
+
+    const int32 NeighborOffsets[8][2] = {
+        {-1, 0}, {1, 0}, {0, -1}, {0, 1},
+        {-1, -1}, {-1, 1}, {1, -1}, {1, 1}
+    };
+    int32 RelaxationPasses = 0;
+    for (; RelaxationPasses < 256; ++RelaxationPasses)
+    {
+        double MaximumAdjustment = 0.0;
+        for (int32 Y = PatchMinY; Y <= PatchMaxY; ++Y)
+        {
+            for (int32 X = PatchMinX; X <= PatchMaxX; ++X)
+            {
+                const int32 Index = PatchIndex(X, Y);
+                if (!ApronVertices[Index] || InnerVertices[Index]) continue;
+
+                double MinimumAllowed = -TNumericLimits<double>::Max();
+                double MaximumAllowed = TNumericLimits<double>::Max();
+                const FVector WorldVertex = LandscapeTransform.TransformPosition(FVector(X, Y, 0.0));
+                for (const int32* Offset : NeighborOffsets)
+                {
+                    const int32 NeighborX = X + Offset[0];
+                    const int32 NeighborY = Y + Offset[1];
+                    if (NeighborX < PatchMinX || NeighborX > PatchMaxX || NeighborY < PatchMinY || NeighborY > PatchMaxY) continue;
+                    const int32 NeighborIndex = PatchIndex(NeighborX, NeighborY);
+                    if (!ApronVertices[NeighborIndex]) continue;
+                    const FVector NeighborWorld = LandscapeTransform.TransformPosition(FVector(NeighborX, NeighborY, 0.0));
+                    const double MaximumRise = FVector2D::Distance(FVector2D(WorldVertex), FVector2D(NeighborWorld)) * MaximumApronGrade;
+                    MinimumAllowed = FMath::Max(MinimumAllowed, EngineeredWorldHeights[NeighborIndex] - MaximumRise);
+                    MaximumAllowed = FMath::Min(MaximumAllowed, EngineeredWorldHeights[NeighborIndex] + MaximumRise);
+                }
+                const double Current = EngineeredWorldHeights[Index];
+                const double Desired = OriginalWorldZ(X, Y);
+                const double Adjusted = FMath::Clamp(Desired, MinimumAllowed, MaximumAllowed);
+                EngineeredWorldHeights[Index] = Adjusted;
+                MaximumAdjustment = FMath::Max(MaximumAdjustment, FMath::Abs(Adjusted - Current));
+            }
+        }
+        if (MaximumAdjustment < 0.01) break;
+    }
+
+    double ProposedMaximumApronSlope = 0.0;
+    for (int32 Y = PatchMinY; Y <= PatchMaxY; ++Y)
+    {
+        for (int32 X = PatchMinX; X <= PatchMaxX; ++X)
+        {
+            const int32 Index = PatchIndex(X, Y);
+            if (!ApronVertices[Index]) continue;
+            for (int32 Neighbor = 1; Neighbor < 8; Neighbor += 2)
+            {
+                const int32 NeighborX = X + NeighborOffsets[Neighbor][0];
+                const int32 NeighborY = Y + NeighborOffsets[Neighbor][1];
+                if (NeighborX < PatchMinX || NeighborX > PatchMaxX || NeighborY < PatchMinY || NeighborY > PatchMaxY) continue;
+                const int32 NeighborIndex = PatchIndex(NeighborX, NeighborY);
+                if (!ApronVertices[NeighborIndex]) continue;
+                const FVector WorldA = LandscapeTransform.TransformPosition(FVector(X, Y, 0.0));
+                const FVector WorldB = LandscapeTransform.TransformPosition(FVector(NeighborX, NeighborY, 0.0));
+                const double Horizontal = FVector2D::Distance(FVector2D(WorldA), FVector2D(WorldB));
+                ProposedMaximumApronSlope = FMath::Max(ProposedMaximumApronSlope,
+                    FMath::RadiansToDegrees(FMath::Atan2(FMath::Abs(EngineeredWorldHeights[NeighborIndex] - EngineeredWorldHeights[Index]), Horizontal)));
+            }
+        }
+    }
+    if (ProposedMaximumApronSlope > MaximumApronSlopeDegrees + 0.001)
+    {
+        UE_LOG(LogTemp, Error, TEXT("JPVC_GRADING refused: slope-limited apron proposal reached %.6f degrees."), ProposedMaximumApronSlope);
+        return false;
+    }
+
+    const FVector ApronLocalA = LandscapeTransform.InverseTransformPosition(FVector(ApronMinX, ApronMinY, 0.0));
+    const FVector ApronLocalB = LandscapeTransform.InverseTransformPosition(FVector(ApronMaxX, ApronMaxY, 0.0));
+    const int32 ApronLocalMinX = FMath::Clamp(FMath::CeilToInt(FMath::Min(ApronLocalA.X, ApronLocalB.X)), PatchMinX, PatchMaxX);
+    const int32 ApronLocalMaxX = FMath::Clamp(FMath::FloorToInt(FMath::Max(ApronLocalA.X, ApronLocalB.X)), PatchMinX, PatchMaxX);
+    const int32 ApronLocalMinY = FMath::Clamp(FMath::CeilToInt(FMath::Min(ApronLocalA.Y, ApronLocalB.Y)), PatchMinY, PatchMaxY);
+    const int32 ApronLocalMaxY = FMath::Clamp(FMath::FloorToInt(FMath::Max(ApronLocalA.Y, ApronLocalB.Y)), PatchMinY, PatchMaxY);
+
+    TArray<uint16> ProposedPatchHeights = OriginalPatchHeights;
+    TSet<FIntPoint> ChangedVertices;
+    TSet<FIntPoint> ChangedTiles;
+    constexpr int32 TileSize = 255;
+    double MinimumDelta = TNumericLimits<double>::Max();
+    double MaximumDelta = -TNumericLimits<double>::Max();
+    for (int32 Y = PatchMinY; Y <= PatchMaxY; ++Y)
+    {
+        for (int32 X = PatchMinX; X <= PatchMaxX; ++X)
+        {
+            const int32 Index = PatchIndex(X, Y);
+            const FVector WorldVertex = LandscapeTransform.TransformPosition(FVector(X, Y, 0.0));
+            const double OriginalZ = OriginalWorldZ(X, Y);
+            double DesiredZ = EngineeredWorldHeights[Index];
+            if (!ApronVertices[Index])
+            {
+                const int32 NearestApronX = FMath::Clamp(X, ApronLocalMinX, ApronLocalMaxX);
+                const int32 NearestApronY = FMath::Clamp(Y, ApronLocalMinY, ApronLocalMaxY);
+                const double ApronEdgeZ = EngineeredWorldHeights[PatchIndex(NearestApronX, NearestApronY)];
+                const double TX = WorldVertex.X < ApronMinX
+                    ? (ApronMinX - WorldVertex.X) / (ApronMinX - OuterMinX)
+                    : (WorldVertex.X > ApronMaxX ? (WorldVertex.X - ApronMaxX) / (OuterMaxX - ApronMaxX) : 0.0);
+                const double TY = WorldVertex.Y < ApronMinY
+                    ? (ApronMinY - WorldVertex.Y) / (ApronMinY - OuterMinY)
+                    : (WorldVertex.Y > ApronMaxY ? (WorldVertex.Y - ApronMaxY) / (OuterMaxY - ApronMaxY) : 0.0);
+                const double ShoulderT = FMath::Clamp(FMath::Max(TX, TY), 0.0, 1.0);
+                const double Alpha = 1.0 - FMath::SmoothStep(0.0, 1.0, ShoulderT);
+                DesiredZ = FMath::Lerp(OriginalZ, ApronEdgeZ, Alpha);
+            }
+
+            const double DesiredLocalZ = LandscapeTransform.InverseTransformPosition(
+                FVector(WorldVertex.X, WorldVertex.Y, DesiredZ)).Z;
+            const uint16 ProposedRaw = LandscapeDataAccess::GetTexHeight(DesiredLocalZ);
+            if (ProposedRaw == OriginalPatchHeights[Index]) continue;
+            ProposedPatchHeights[Index] = ProposedRaw;
+            ChangedVertices.Add(FIntPoint(X, Y));
+            ChangedTiles.Add(FIntPoint((X - Extent.Min.X) / TileSize, (Y - Extent.Min.Y) / TileSize));
+            const double QuantizedWorldZ = LandscapeTransform.TransformPosition(
+                FVector(X, Y, LandscapeDataAccess::GetLocalHeight(ProposedRaw))).Z;
+            MinimumDelta = FMath::Min(MinimumDelta, QuantizedWorldZ - OriginalZ);
+            MaximumDelta = FMath::Max(MaximumDelta, QuantizedWorldZ - OriginalZ);
+        }
+    }
+    if (ChangedVertices.Num() == 0)
+    {
+        UE_LOG(LogTemp, Error, TEXT("JPVC_GRADING refused: proposal produced no height changes."));
+        return false;
+    }
+
+    auto WritePatch = [&](const TArray<uint16>& Heights)
+    {
+        {
+            FScopedSetLandscapeEditingLayer LayerScope(LandscapeActor, EditLayerGuid,
+                [LandscapeActor]() { LandscapeActor->RequestLayersContentUpdateForceAll(); });
+            FLandscapeEditDataInterface Edit(LandscapeInfo);
+            Edit.SetHeightData(PatchMinX, PatchMinY, PatchMaxX, PatchMaxY, Heights.GetData(), PatchWidth, true);
+            Edit.Flush();
+        }
+        LandscapeActor->ForceUpdateLayersContent();
+    };
+    auto Rollback = [&]()
+    {
+        WritePatch(OriginalPatchHeights);
+        UE_LOG(LogTemp, Warning, TEXT("JPVC_GRADING rollback completed; map was not saved."));
+    };
+
+    Landscape->Modify();
+    WritePatch(ProposedPatchHeights);
+    LandscapeInfo->ForAllLandscapeComponents([&](ULandscapeComponent* Component)
+    {
+        if (!Component) return;
+        const FIntPoint Key = Component->GetComponentKey();
+        if (!ChangedTiles.Contains(FIntPoint(Key.X, Key.Y))) return;
+        Component->UpdateCollisionData(/*bInUpdateHeightfieldRegion=*/true);
+        LandscapeInfo->MarkObjectDirty(Component);
+    });
+    FlushRenderingCommands();
+
+    TArray<uint16> VerifiedReadHeights;
+    VerifiedReadHeights.SetNumUninitialized(ReadWidth * ReadHeight);
+    {
+        FLandscapeEditDataInterface VerifyEdit(LandscapeInfo);
+        VerifyEdit.GetHeightDataFast(ReadMinX, ReadMinY, ReadMaxX, ReadMaxY, VerifiedReadHeights.GetData(), ReadWidth);
+    }
+
+    int32 ActualChangedVertices = 0;
+    int32 UnexpectedChangedVertices = 0;
+    int32 OutsideOuterChanges = 0;
+    int32 InnerMismatches = 0;
+    FIntRect ActualChangedBounds(FIntPoint(MAX_int32, MAX_int32), FIntPoint(MIN_int32, MIN_int32));
+    double ActualChangedMinWorldX = TNumericLimits<double>::Max();
+    double ActualChangedMaxWorldX = -TNumericLimits<double>::Max();
+    double ActualChangedMinWorldY = TNumericLimits<double>::Max();
+    double ActualChangedMaxWorldY = -TNumericLimits<double>::Max();
+    double MaximumOuterEdgeDelta = 0.0;
+    for (int32 Y = ReadMinY; Y <= ReadMaxY; ++Y)
+    {
+        for (int32 X = ReadMinX; X <= ReadMaxX; ++X)
+        {
+            const int32 Index = ReadIndex(X, Y);
+            if (VerifiedReadHeights[Index] == OriginalReadHeights[Index]) continue;
+            ++ActualChangedVertices;
+            const FVector WorldVertex = LandscapeTransform.TransformPosition(FVector(X, Y, 0.0));
+            if (!IsInside(WorldVertex.X, WorldVertex.Y, OuterMinX, OuterMaxX, OuterMinY, OuterMaxY))
+            {
+                ++OutsideOuterChanges;
+                continue;
+            }
+            const int32 ProposedIndex = PatchIndex(X, Y);
+            if (!ChangedVertices.Contains(FIntPoint(X, Y)) || VerifiedReadHeights[Index] != ProposedPatchHeights[ProposedIndex])
+            {
+                ++UnexpectedChangedVertices;
+            }
+            ActualChangedBounds.Min.X = FMath::Min(ActualChangedBounds.Min.X, X);
+            ActualChangedBounds.Min.Y = FMath::Min(ActualChangedBounds.Min.Y, Y);
+            ActualChangedBounds.Max.X = FMath::Max(ActualChangedBounds.Max.X, X);
+            ActualChangedBounds.Max.Y = FMath::Max(ActualChangedBounds.Max.Y, Y);
+            ActualChangedMinWorldX = FMath::Min(ActualChangedMinWorldX, WorldVertex.X);
+            ActualChangedMaxWorldX = FMath::Max(ActualChangedMaxWorldX, WorldVertex.X);
+            ActualChangedMinWorldY = FMath::Min(ActualChangedMinWorldY, WorldVertex.Y);
+            ActualChangedMaxWorldY = FMath::Max(ActualChangedMaxWorldY, WorldVertex.Y);
+        }
+    }
+
+    double VerifiedMaximumApronSlope = 0.0;
+    double VerifiedInnerMinimum = TNumericLimits<double>::Max();
+    double VerifiedInnerMaximum = -TNumericLimits<double>::Max();
+    long double VerifiedInnerSum = 0.0;
+    int32 VerifiedInnerCount = 0;
+    double VerifiedMaximumInnerDeviation = 0.0;
+    double VerifiedMaximumInnerSlope = 0.0;
+    double MaximumBlendSeamStep = 0.0;
+    double MaximumBlendSeamSlope = 0.0;
+    for (int32 Y = PatchMinY; Y <= PatchMaxY; ++Y)
+    {
+        for (int32 X = PatchMinX; X <= PatchMaxX; ++X)
+        {
+            const int32 PatchArrayIndex = PatchIndex(X, Y);
+            if (!ApronVertices[PatchArrayIndex]) continue;
+            const uint16 Raw = VerifiedReadHeights[ReadIndex(X, Y)];
+            const double WorldZ = LandscapeTransform.TransformPosition(
+                FVector(X, Y, LandscapeDataAccess::GetLocalHeight(Raw))).Z;
+            if (InnerVertices[PatchArrayIndex])
+            {
+                VerifiedInnerMinimum = FMath::Min(VerifiedInnerMinimum, WorldZ);
+                VerifiedInnerMaximum = FMath::Max(VerifiedInnerMaximum, WorldZ);
+                VerifiedInnerSum += WorldZ;
+                ++VerifiedInnerCount;
+                VerifiedMaximumInnerDeviation = FMath::Max(VerifiedMaximumInnerDeviation, FMath::Abs(WorldZ - TargetZ));
+                if (FMath::Abs(WorldZ - TargetZ) > 1.0) ++InnerMismatches;
+            }
+            for (int32 Neighbor = 1; Neighbor < 8; Neighbor += 2)
+            {
+                const int32 NeighborX = X + NeighborOffsets[Neighbor][0];
+                const int32 NeighborY = Y + NeighborOffsets[Neighbor][1];
+                if (NeighborX < PatchMinX || NeighborX > PatchMaxX || NeighborY < PatchMinY || NeighborY > PatchMaxY) continue;
+                const int32 NeighborPatchIndex = PatchIndex(NeighborX, NeighborY);
+                if (!ApronVertices[NeighborPatchIndex]) continue;
+                const uint16 NeighborRaw = VerifiedReadHeights[ReadIndex(NeighborX, NeighborY)];
+                const double NeighborWorldZ = LandscapeTransform.TransformPosition(
+                    FVector(NeighborX, NeighborY, LandscapeDataAccess::GetLocalHeight(NeighborRaw))).Z;
+                const FVector WorldA = LandscapeTransform.TransformPosition(FVector(X, Y, 0.0));
+                const FVector WorldB = LandscapeTransform.TransformPosition(FVector(NeighborX, NeighborY, 0.0));
+                const double Horizontal = FVector2D::Distance(FVector2D(WorldA), FVector2D(WorldB));
+                const double Slope = FMath::RadiansToDegrees(FMath::Atan2(FMath::Abs(NeighborWorldZ - WorldZ), Horizontal));
+                VerifiedMaximumApronSlope = FMath::Max(VerifiedMaximumApronSlope, Slope);
+                if (InnerVertices[PatchArrayIndex] && InnerVertices[NeighborPatchIndex])
+                {
+                    VerifiedMaximumInnerSlope = FMath::Max(VerifiedMaximumInnerSlope, Slope);
+                }
+            }
+        }
+    }
+
+    for (int32 Y = PatchMinY; Y <= PatchMaxY; ++Y)
+    {
+        for (int32 X = PatchMinX; X <= PatchMaxX; ++X)
+        {
+            const int32 Index = PatchIndex(X, Y);
+            const uint16 Raw = VerifiedReadHeights[ReadIndex(X, Y)];
+            const double WorldZ = LandscapeTransform.TransformPosition(
+                FVector(X, Y, LandscapeDataAccess::GetLocalHeight(Raw))).Z;
+            if (X == PatchMinX || X == PatchMaxX || Y == PatchMinY || Y == PatchMaxY)
+            {
+                MaximumOuterEdgeDelta = FMath::Max(MaximumOuterEdgeDelta, FMath::Abs(WorldZ - OriginalWorldZ(X, Y)));
+            }
+            for (const FIntPoint Offset : {FIntPoint(1, 0), FIntPoint(0, 1)})
+            {
+                const int32 NeighborX = X + Offset.X;
+                const int32 NeighborY = Y + Offset.Y;
+                if (NeighborX > PatchMaxX || NeighborY > PatchMaxY) continue;
+                const int32 NeighborIndex = PatchIndex(NeighborX, NeighborY);
+                if (ApronVertices[Index] == ApronVertices[NeighborIndex]) continue;
+                const uint16 NeighborRaw = VerifiedReadHeights[ReadIndex(NeighborX, NeighborY)];
+                const double NeighborWorldZ = LandscapeTransform.TransformPosition(
+                    FVector(NeighborX, NeighborY, LandscapeDataAccess::GetLocalHeight(NeighborRaw))).Z;
+                const FVector WorldA = LandscapeTransform.TransformPosition(FVector(X, Y, 0.0));
+                const FVector WorldB = LandscapeTransform.TransformPosition(FVector(NeighborX, NeighborY, 0.0));
+                const double Step = FMath::Abs(NeighborWorldZ - WorldZ);
+                const double Horizontal = FVector2D::Distance(FVector2D(WorldA), FVector2D(WorldB));
+                MaximumBlendSeamStep = FMath::Max(MaximumBlendSeamStep, Step);
+                MaximumBlendSeamSlope = FMath::Max(MaximumBlendSeamSlope,
+                    FMath::RadiansToDegrees(FMath::Atan2(Step, Horizontal)));
+            }
+        }
+    }
+
+    const double VerifiedInnerAverage = VerifiedInnerCount > 0
+        ? static_cast<double>(VerifiedInnerSum / VerifiedInnerCount)
+        : 0.0;
+
+    const bool bValid = ActualChangedVertices == ChangedVertices.Num()
+        && UnexpectedChangedVertices == 0
+        && OutsideOuterChanges == 0
+        && InnerMismatches == 0
+        && VerifiedInnerCount == InnerVertexCount
+        && VerifiedMaximumApronSlope <= MaximumApronSlopeDegrees + 0.05;
+    UE_LOG(LogTemp, Display, TEXT("JPVC_GRADING VERIFY METHOD=LOCAL_RAW_VERTEX_EDIT RENDER_TARGETS=NO LINE_TRACES=NO TARGET_Z=%.1f INNER_VERTICES=%d INNER_MIN=%.3f INNER_MAX=%.3f INNER_AVG=%.3f INNER_MAX_DEVIATION=%.3f INNER_MAX_SLOPE=%.4f APRON_MAX_SLOPE=%.4f BLEND_SEAM_MAX_STEP=%.3f BLEND_SEAM_MAX_SLOPE=%.4f OUTER_EDGE_MAX_DELTA=%.3f CHANGED=%d ACTUAL_CHANGED=%d UNEXPECTED=%d OUTSIDE_OUTER_CHANGED=%d INNER_MISMATCHES=%d CUT_MAX=%.3f FILL_MAX=%.3f LOCAL_BOUNDS=(%d,%d)-(%d,%d) WORLD_XY_BOUNDS=(%.3f,%.3f)-(%.3f,%.3f) RELAXATION_PASSES=%d"),
+        TargetZ, InnerVertexCount, VerifiedInnerMinimum, VerifiedInnerMaximum, VerifiedInnerAverage, VerifiedMaximumInnerDeviation,
+        VerifiedMaximumInnerSlope, VerifiedMaximumApronSlope, MaximumBlendSeamStep, MaximumBlendSeamSlope,
+        MaximumOuterEdgeDelta, ChangedVertices.Num(), ActualChangedVertices, UnexpectedChangedVertices,
+        OutsideOuterChanges, InnerMismatches, -MinimumDelta, MaximumDelta,
+        ActualChangedBounds.Min.X, ActualChangedBounds.Min.Y, ActualChangedBounds.Max.X, ActualChangedBounds.Max.Y,
+        ActualChangedMinWorldX, ActualChangedMinWorldY, ActualChangedMaxWorldX, ActualChangedMaxWorldY,
+        RelaxationPasses + 1);
+    if (!bValid)
+    {
+        Rollback();
+        UE_LOG(LogTemp, Error, TEXT("JPVC_GRADING failed verification; Landscape restored and map not saved."));
+        return false;
+    }
+
+    Landscape->MarkPackageDirty();
+    if (!FEditorFileUtils::SaveLevel(World->PersistentLevel))
+    {
+        Rollback();
+        UE_LOG(LogTemp, Error, TEXT("JPVC_GRADING failed to save construction map; Landscape restored in memory."));
+        return false;
+    }
+    UE_LOG(LogTemp, Display, TEXT("JPVC_GRADING SUCCESS: Visitor Center platform saved only to construction map."));
+    return true;
+}
+
 bool UJPJurassicDreamLandscapeImportLibrary::ProbeTourRoadWaterCrossing()
 {
     if (!GEditor)
@@ -3166,9 +3690,9 @@ bool UJPJurassicDreamLandscapeImportLibrary::ProbeTourRoadWaterCrossing()
     }
 
     UWorld* World = GEditor->GetEditorWorldContext().World();
-    if (!World || !World->PersistentLevel || World->GetOutermost()->GetName() != TargetMapPackage)
+    if (!IsReadOnlyAllowedMap(World))
     {
-        UE_LOG(LogTemp, Error, TEXT("JPWATER_PROBE refused: target map is not active."));
+        UE_LOG(LogTemp, Error, TEXT("JPWATER_PROBE refused: neither master nor construction is active."));
         return false;
     }
 
@@ -3410,6 +3934,11 @@ bool UJPJurassicDreamLandscapeImportLibrary::ProbeTourRoadGrading()
 }
 
 bool UJPJurassicDreamLandscapeImportLibrary::GradeTourRoadLandscape()
+{
+    return false;
+}
+
+bool UJPJurassicDreamLandscapeImportLibrary::GradeVisitorCenterPlatform()
 {
     return false;
 }
